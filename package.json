@@ -15,13 +15,13 @@
     "library",
     "htmx"
   ],
-  "homepage": "https://github.com/majidnajafzadeh/techjs#readme",
+  "homepage": "https://github.com/najafzadeh-mj/techjs#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/majidnajafzadeh/techjs.git"
+    "url": "git+https://github.com/najafzadeh-mj/techjs.git"
   },
   "bugs": {
-    "url": "https://github.com/majidnajafzadeh/techjs/issues"
+    "url": "https://github.com/najafzadeh-mj/techjs/issues"
   },
   "license": "MIT",
   "author": "Majid Najafzadeh",
