@@ -1,0 +1,177 @@
+# ------------------------------------------------------------
+
+# Tech.js - .gitignore
+
+# Node.js + ASP.NET Core MVC
+
+# ------------------------------------------------------------
+
+# =========================
+
+# Node.js
+
+# =========================
+
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Package manager cache
+
+.npm/
+.pnpm-store/
+.yarn/
+
+# Environment files
+
+.env
+.env.*
+!.env.example
+
+# =========================
+
+# Build outputs
+
+# =========================
+
+dist/
+build/
+coverage/
+
+# Temporary files
+
+*.tmp
+*.temp
+*.cache
+
+# =========================
+
+# Source maps (optional)
+
+# Uncomment if you don't want to publish sourcemaps
+
+# =========================
+
+# *.map
+
+# =========================
+
+# Visual Studio
+
+# =========================
+
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build results
+
+bin/
+obj/
+
+# ASP.NET Scaffolding
+
+ScaffoldingReadMe.txt
+
+# Publish output
+
+publish/
+app.publish/
+
+# IIS Express
+
+iisexpress/
+*.vspscc
+*.vssscc
+
+# NuGet
+
+packages/
+*.nupkg
+*.snupkg
+
+# Rider / JetBrains
+
+.idea/
+*.sln.iml
+
+# VS Code
+
+.vscode/
+.history/
+
+# =========================
+
+# OS files
+
+# =========================
+
+# Windows
+
+Thumbs.db
+Desktop.ini
+
+# macOS
+
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+
+*~
+
+# =========================
+
+# Logs
+
+# =========================
+
+logs/
+*.log
+
+# =========================
+
+# Test results
+
+# =========================
+
+TestResults/
+
+# =========================
+
+# Generated documentation
+
+# =========================
+
+site/
+docs/.cache/
+
+# =========================
+
+# Optional: keep release artifacts out of Git
+
+# Uncomment if releases are generated automatically
+
+# =========================
+
+# dist/tech.js
+
+# dist/tech.min.js
+
+# ------------------------------------------------------------
+
+# Keep these files tracked
+
+# ------------------------------------------------------------
+
+!README.md
+!LICENSE
+!package.json
+!package-lock.json
+!build.mjs
+!src/
