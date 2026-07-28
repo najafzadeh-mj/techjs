@@ -1,0 +1,55 @@
+```json
+{
+  "name": "techjs",
+  "version": "1.0.0-alpha.1",
+  "description": "A lightweight attribute-based Fetch/Ajax library for modern web applications.",
+  "keywords": [
+    "javascript",
+    "fetch",
+    "ajax",
+    "attribute-based",
+    "vanilla-js",
+    "aspnetcore",
+    "mvc",
+    "frontend",
+    "library",
+    "htmx"
+  ],
+  "homepage": "https://github.com/majidnajafzadeh/techjs#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/majidnajafzadeh/techjs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/majidnajafzadeh/techjs/issues"
+  },
+  "license": "MIT",
+  "author": "Majid Najafzadeh",
+  "contributors": [
+    "OpenAI ChatGPT"
+  ],
+  "type": "module",
+  "main": "dist/tech.js",
+  "module": "dist/tech.js",
+  "unpkg": "dist/tech.min.js",
+  "jsdelivr": "dist/tech.min.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "rebuild": "npm run clean && npm run build",
+    "prepare": "npm run build"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.9"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
+```
