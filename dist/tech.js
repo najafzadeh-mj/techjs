@@ -1,0 +1,1819 @@
+/*!
+ * Tech.js v1.0.0-alpha
+ * Copyright (c) 2026
+ * Released under the MIT License
+ */
+var Tech = (() => {
+  // src/core/tech.config.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    const DEFAULT_CONFIG = Object.freeze({
+      debug: false,
+      baseUrl: "",
+      timeout: 3e4,
+      defaultMethod: "GET",
+      credentials: "same-origin",
+      cache: "no-cache",
+      mode: "same-origin",
+      redirect: "follow",
+      keepalive: false,
+      headers: {
+        "X-Requested-With": "XMLHttpRequest"
+      },
+      antiForgery: {
+        enabled: true,
+        fieldName: "__RequestVerificationToken",
+        headerName: "RequestVerificationToken"
+      },
+      retry: {
+        enabled: false,
+        count: 0,
+        delay: 1e3
+      },
+      loading: {
+        enabled: true,
+        delay: 150
+      }
+    });
+    let config = clone(DEFAULT_CONFIG);
+    const validators = {
+      debug(value) {
+        if (typeof value !== "boolean") {
+          throw new Error("Config 'debug' must be boolean.");
+        }
+      },
+      timeout(value) {
+        if (!Number.isInteger(value) || value < 0) {
+          throw new Error("Config 'timeout' must be a positive integer.");
+        }
+      },
+      defaultMethod(value) {
+        if (typeof value !== "string") {
+          throw new Error("Config 'defaultMethod' must be string.");
+        }
+      },
+      "retry.count"(value) {
+        if (!Number.isInteger(value) || value < 0) {
+          throw new Error("Config 'retry.count' must be a positive integer.");
+        }
+      },
+      "retry.delay"(value) {
+        if (!Number.isInteger(value) || value < 0) {
+          throw new Error("Config 'retry.delay' must be a positive integer.");
+        }
+      },
+      "loading.delay"(value) {
+        if (!Number.isInteger(value) || value < 0) {
+          throw new Error("Config 'loading.delay' must be a positive integer.");
+        }
+      },
+      keepalive(value) {
+        if (typeof value !== "boolean") {
+          throw new Error(
+            "Config 'keepalive' must be boolean."
+          );
+        }
+      },
+      "loading.enabled"(value) {
+        if (typeof value !== "boolean") {
+          throw new Error(
+            "Config 'loading.enabled' must be boolean."
+          );
+        }
+      },
+      "antiForgery.enabled"(value) {
+        if (typeof value !== "boolean") {
+          throw new Error(
+            "Config 'antiForgery.enabled' must be boolean."
+          );
+        }
+      },
+      baseUrl(value) {
+        if (typeof value !== "string") {
+          throw new Error(
+            "Config 'baseUrl' must be string."
+          );
+        }
+      }
+    };
+    function clone(value) {
+      if (value === void 0 || value === null) {
+        return value;
+      }
+      if (typeof structuredClone === "function") {
+        return structuredClone(value);
+      }
+      return JSON.parse(JSON.stringify(value));
+    }
+    function validate(path, value) {
+      const validator = validators[path];
+      if (validator) {
+        validator(value);
+      }
+    }
+    function validateConfig(object) {
+      validate("debug", object.debug);
+      validate("timeout", object.timeout);
+      validate("defaultMethod", object.defaultMethod);
+      validate("retry.count", object.retry.count);
+      validate("retry.delay", object.retry.delay);
+      validate("loading.delay", object.loading.delay);
+      validate("baseUrl", object.baseUrl);
+      validate("keepalive", object.keepalive);
+      validate("loading.enabled", object.loading.enabled);
+      validate("antiForgery.enabled", object.antiForgery.enabled);
+    }
+    function resolve(path, object) {
+      if (!path) {
+        return object;
+      }
+      const keys = path.split(".");
+      let current = object;
+      for (const key of keys) {
+        if (current == null) {
+          return void 0;
+        }
+        current = current[key];
+      }
+      return current;
+    }
+    function assign(path, value, object) {
+      const keys = path.split(".");
+      let current = object;
+      while (keys.length > 1) {
+        const key = keys.shift();
+        if (!(key in current)) {
+          throw new Error(`Unknown configuration path '${path}'.`);
+        }
+        current = current[key];
+        if (!isPlainObject(current)) {
+          throw new Error(
+            "Invalid configuration path '" + path + "'."
+          );
+        }
+      }
+      current[keys[0]] = value;
+    }
+    function merge(target, source) {
+      if (!isPlainObject(source)) {
+        return;
+      }
+      for (const key of Object.keys(source)) {
+        if (!(key in target)) {
+          throw new Error(
+            "Unknown configuration option '" + key + "'."
+          );
+        }
+        const sourceValue = source[key];
+        if (isPlainObject(sourceValue) && isPlainObject(target[key])) {
+          merge(target[key], sourceValue);
+          return;
+        }
+        target[key] = clone(sourceValue);
+      }
+    }
+    function isPlainObject(value) {
+      return value !== null && typeof value === "object" && !Array.isArray(value);
+    }
+    function get(path) {
+      const value = resolve(path, config);
+      return clone(value);
+    }
+    function set(path, value) {
+      if (typeof path !== "string" || !path.length) {
+        throw new Error("Configuration path is required.");
+      }
+      validate(path, value);
+      const copy = clone(config);
+      assign(path, value, copy);
+      validateConfig(copy);
+      config = copy;
+    }
+    function mergeConfig(options) {
+      if (!options || typeof options !== "object") {
+        return;
+      }
+      const copy = clone(config);
+      merge(copy, options);
+      validateConfig(copy);
+      config = copy;
+    }
+    function reset() {
+      config = clone(DEFAULT_CONFIG);
+    }
+    function defaults() {
+      return clone(DEFAULT_CONFIG);
+    }
+    Tech.Config = Object.freeze({
+      /**
+       * Gets a configuration value.
+       */
+      get,
+      /**
+       * Sets a configuration value.
+       */
+      set,
+      /**
+       * Merges configuration values.
+       */
+      merge: mergeConfig,
+      /**
+       * Restores defaults.
+       */
+      reset,
+      /**
+       * Returns immutable defaults.
+       */
+      defaults
+    });
+  })(window);
+
+  // src/core/tech.constants.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    Tech.Constants = Object.freeze({
+      //----------------------------------------------------------
+      // Events
+      //----------------------------------------------------------
+      Events: Object.freeze({
+        BEFORE: "tech:before",
+        SUCCESS: "tech:success",
+        ERROR: "tech:error",
+        COMPLETE: "tech:complete",
+        LOADING_START: "tech:loadingStart",
+        LOADING_END: "tech:loadingEnd",
+        PARTIAL_LOADED: "tech:partialLoaded",
+        MODAL_OPEN: "tech:modalOpen",
+        MODAL_CLOSE: "tech:modalClose",
+        VALIDATION_ERROR: "tech:validationError"
+      }),
+      //----------------------------------------------------------
+      // Methods
+      //----------------------------------------------------------
+      Methods: Object.freeze({
+        GET: "GET",
+        POST: "POST",
+        PUT: "PUT",
+        PATCH: "PATCH",
+        DELETE: "DELETE",
+        HEAD: "HEAD",
+        OPTIONS: "OPTIONS"
+      }),
+      //----------------------------------------------------------
+      // Http Methods
+      //----------------------------------------------------------
+      HttpMethod: Object.freeze({
+        GET: "GET",
+        POST: "POST",
+        PUT: "PUT",
+        PATCH: "PATCH",
+        DELETE: "DELETE"
+      }),
+      //----------------------------------------------------------
+      // Headers
+      //----------------------------------------------------------
+      Headers: Object.freeze({
+        RequestedWith: "X-Requested-With",
+        AntiForgery: "RequestVerificationToken",
+        ContentType: "Content-Type",
+        Accept: "Accept",
+        Authorization: "Authorization"
+      }),
+      //----------------------------------------------------------
+      // Content Types
+      //----------------------------------------------------------
+      ContentType: Object.freeze({
+        Json: "application/json",
+        Form: "application/x-www-form-urlencoded",
+        Multipart: "multipart/form-data",
+        Html: "text/html",
+        Text: "text/plain"
+      }),
+      //----------------------------------------------------------
+      // Fetch Response Types
+      //----------------------------------------------------------
+      ResponseType: Object.freeze({
+        Json: "json",
+        Text: "text",
+        Blob: "blob",
+        ArrayBuffer: "arrayBuffer",
+        FormData: "formData",
+        UNKNOWN: "unknown"
+      }),
+      //----------------------------------------------------------
+      // Html Data Attributes
+      //----------------------------------------------------------
+      Attributes: Object.freeze({
+        ROOT: "data-tech",
+        METHOD: "data-tech-method",
+        URL: "data-tech-url",
+        RESPONSE: "data-tech-response",
+        TARGET: "data-tech-target",
+        SWAP: "data-tech-swap",
+        CONFIRM: "data-tech-confirm",
+        LOADING: "data-tech-loading",
+        PUSHURL: "data-tech-push-url",
+        REPLACEURL: "data-tech-replace-url",
+        TRIGGER: "data-tech-trigger",
+        INDICATOR: "data-tech-indicator",
+        VALIDATE: "data-tech-validate",
+        ENCODING: "data-tech-encoding",
+        DATA: "data-tech-data",
+        DATAFORM: "data-tech-data-form",
+        SOURCE: "data-tech-source"
+      }),
+      //----------------------------------------------------------
+      // Swap Mode
+      //----------------------------------------------------------
+      Swap: Object.freeze({
+        InnerHtml: "inner",
+        OuterHtml: "outer",
+        BeforeBegin: "beforebegin",
+        AfterBegin: "afterbegin",
+        BeforeEnd: "beforeend",
+        AfterEnd: "afterend"
+      }),
+      //----------------------------------------------------------
+      // Css Classes
+      //----------------------------------------------------------
+      Css: Object.freeze({
+        Loading: "tech-loading",
+        Disabled: "tech-disabled",
+        Error: "tech-error",
+        Success: "tech-success"
+      }),
+      //----------------------------------------------------------
+      // Status
+      //----------------------------------------------------------
+      Status: Object.freeze({
+        SUCCESS: "success",
+        ERROR: "error",
+        WARNING: "warning",
+        INFO: "info"
+      })
+    });
+  })(window);
+
+  // src/core/tech.utils.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    const Utils = {};
+    Utils.Type = Object.freeze({
+      isNull(value) {
+        return value === null || value === void 0;
+      },
+      isString(value) {
+        return typeof value === "string";
+      },
+      isNumber(value) {
+        return typeof value === "number" && !Number.isNaN(value);
+      },
+      isBoolean(value) {
+        return typeof value === "boolean";
+      },
+      isFunction(value) {
+        return typeof value === "function";
+      },
+      isArray(value) {
+        return Array.isArray(value);
+      },
+      isObject(value) {
+        return value !== null && typeof value === "object" && !Array.isArray(value);
+      },
+      isElement(value) {
+        return value && value.nodeType === 1;
+      },
+      isForm(value) {
+        return value instanceof HTMLFormElement;
+      },
+      isEmpty(value) {
+        if (value === null || value === void 0)
+          return true;
+        if (typeof value === "string")
+          return value.trim().length === 0;
+        if (Array.isArray(value))
+          return value.length === 0;
+        if (this.isObject(value))
+          return Object.keys(value).length === 0;
+        return false;
+      }
+    });
+    Utils.Object = Object.freeze({
+      clone(obj) {
+        if (typeof structuredClone === "function") {
+          return structuredClone(obj);
+        }
+        return JSON.parse(JSON.stringify(obj));
+      },
+      merge(target, source) {
+        if (!Utils.Type.isObject(target) || !Utils.Type.isObject(source))
+          return target;
+        Object.keys(source).forEach((key) => {
+          var _a;
+          if (Utils.Type.isObject(source[key])) {
+            (_a = target[key]) != null ? _a : target[key] = {};
+            Utils.Object.merge(
+              target[key],
+              source[key]
+            );
+          } else {
+            target[key] = source[key];
+          }
+        });
+        return target;
+      }
+    });
+    Utils.Dom = Object.freeze({
+      $(selector, root = document) {
+        return root.querySelector(selector);
+      },
+      $$(selector, root = document) {
+        return [...root.querySelectorAll(selector)];
+      },
+      parse(html) {
+        return new DOMParser().parseFromString(html, "text/html");
+      },
+      create(tag) {
+        return document.createElement(tag);
+      },
+      remove(element) {
+        if (Utils.Type.isElement(element)) {
+          element.remove();
+        }
+      }
+    });
+    Utils.Form = Object.freeze({
+      serialize(form) {
+        return new FormData(form);
+      },
+      toObject(form) {
+        return Object.fromEntries(
+          new FormData(form).entries()
+        );
+      }
+    });
+    Utils.Url = Object.freeze({
+      resolve(url) {
+        const base = Tech.Config.get("baseUrl") || window2.location.origin;
+        return new URL(url, base).toString();
+      },
+      queryString(obj = {}) {
+        return new URLSearchParams(obj).toString();
+      }
+    });
+    Utils.Header = Object.freeze({
+      merge(...headers) {
+        return Object.assign(
+          {},
+          ...headers.filter(Boolean)
+        );
+      },
+      antiForgery() {
+        var _a, _b;
+        const cfg = Tech.Config.get("antiForgery");
+        if (!cfg.enabled)
+          return null;
+        return (_b = (_a = document.querySelector(
+          `input[name="${cfg.fieldName}"]`
+        )) == null ? void 0 : _a.value) != null ? _b : null;
+      }
+    });
+    Utils.Async = Object.freeze({
+      delay(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      },
+      debounce(fn, delay = 300) {
+        let timer;
+        return (...args) => {
+          clearTimeout(timer);
+          timer = setTimeout(() => fn(...args), delay);
+        };
+      },
+      throttle(fn, limit = 300) {
+        let waiting = false;
+        return (...args) => {
+          if (waiting)
+            return;
+          waiting = true;
+          fn(...args);
+          setTimeout(() => {
+            waiting = false;
+          }, limit);
+        };
+      }
+    });
+    Object.freeze(Utils);
+    Tech.Utils = Utils;
+  })(window);
+
+  // src/core/tech.events.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    const listeners = /* @__PURE__ */ new Map();
+    function validateEventName(eventName) {
+      if (typeof eventName !== "string" || eventName.trim().length === 0) {
+        throw new Error(
+          "Event name must be a non-empty string."
+        );
+      }
+    }
+    function validateCallback(callback) {
+      if (typeof callback !== "function") {
+        throw new Error(
+          "Callback must be a function."
+        );
+      }
+    }
+    function on(eventName, callback) {
+      validateEventName(eventName);
+      validateCallback(callback);
+      if (!listeners.has(eventName)) {
+        listeners.set(eventName, []);
+      }
+      listeners.get(eventName).push(callback);
+    }
+    function once(eventName, callback) {
+      validateEventName(eventName);
+      validateCallback(callback);
+      function wrapper(data) {
+        off(eventName, wrapper);
+        callback(data);
+      }
+      on(eventName, wrapper);
+    }
+    function off(eventName, callback) {
+      validateEventName(eventName);
+      validateCallback(callback);
+      if (!listeners.has(eventName)) {
+        return false;
+      }
+      const events = listeners.get(eventName);
+      const index = events.indexOf(callback);
+      if (index === -1) {
+        return false;
+      }
+      events.splice(index, 1);
+      if (events.length === 0) {
+        listeners.delete(eventName);
+      }
+      return true;
+    }
+    function emit(eventName, data) {
+      validateEventName(eventName);
+      if (!listeners.has(eventName)) {
+        return false;
+      }
+      const callbacks = [...listeners.get(eventName)];
+      for (const callback of callbacks) {
+        try {
+          callback(data);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+      return true;
+    }
+    function clear(eventName) {
+      if (eventName === void 0) {
+        listeners.clear();
+        return;
+      }
+      validateEventName(eventName);
+      listeners.delete(eventName);
+    }
+    function has(eventName) {
+      validateEventName(eventName);
+      return listeners.has(eventName);
+    }
+    function count(eventName) {
+      validateEventName(eventName);
+      if (!listeners.has(eventName)) {
+        return 0;
+      }
+      return listeners.get(eventName).length;
+    }
+    function list() {
+      return new Map(listeners);
+    }
+    Tech.Events = Object.freeze({
+      on,
+      once,
+      off,
+      emit,
+      clear,
+      has,
+      count,
+      list
+    });
+  })(window);
+
+  // src/core/tech.data.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    function parseJson(value) {
+      if (!value)
+        return {};
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn("Invalid JSON:", value);
+        return {};
+      }
+    }
+    function formToObject(form) {
+      if (!form)
+        return {};
+      return Object.fromEntries(
+        new FormData(form).entries()
+      );
+    }
+    function containerToObject(container) {
+      if (!container)
+        return {};
+      const result = {};
+      container.querySelectorAll("input,select,textarea").forEach(function(element) {
+        if (!element.name)
+          return;
+        if (element.type === "checkbox") {
+          result[element.name] = element.checked;
+          return;
+        }
+        if (element.type === "radio") {
+          if (element.checked)
+            result[element.name] = element.value;
+          return;
+        }
+        result[element.name] = element.value;
+      });
+      return result;
+    }
+    function merge() {
+      return Object.assign({}, ...arguments);
+    }
+    function build(element) {
+      const json = parseJson(
+        element.getAttribute(
+          Tech.Constants.Attributes.DATA
+        )
+      );
+      let formData = {};
+      const parentForm = element.closest("form");
+      if (parentForm) {
+        formData = formToObject(parentForm);
+      }
+      const formSelector = element.getAttribute(
+        Tech.Constants.Attributes.DATAFORM
+      );
+      if (formSelector) {
+        formData = merge(
+          formData,
+          formToObject(
+            document.querySelector(
+              formSelector
+            )
+          )
+        );
+      }
+      let sourceData = {};
+      const sourceSelector = element.getAttribute(
+        Tech.Constants.Attributes.SOURCE
+      );
+      if (sourceSelector) {
+        sourceData = containerToObject(
+          document.querySelector(
+            sourceSelector
+          )
+        );
+      }
+      return merge(
+        formData,
+        sourceData,
+        json
+      );
+    }
+    function queryString(element) {
+      const data = build(element);
+      return new URLSearchParams(data).toString();
+    }
+    function buildUrl(element, url) {
+      const query = queryString(element);
+      if (!query)
+        return url;
+      return url + (url.includes("?") ? "&" : "?") + query;
+    }
+    function buildBody(element, method) {
+      method = (method || "GET").toUpperCase();
+      if (method === "GET" || method === "HEAD") {
+        return null;
+      }
+      const encoding = element.getAttribute(
+        Tech.Constants.Attributes.Encoding
+      );
+      const form = element.closest("form");
+      if (form && encoding !== "json") {
+        return new FormData(form);
+      }
+      const data = build(element);
+      if (encoding === "json") {
+        return data;
+      }
+      return new URLSearchParams(data);
+    }
+    Tech.Data = Object.freeze({
+      build,
+      buildUrl,
+      queryString,
+      buildBody
+    });
+  })(window);
+
+  // src/network/tech.request.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    function ensure(value, name) {
+      if (value === void 0 || value === null) {
+        throw new Error(name + " is required.");
+      }
+    }
+    function normalizeOptions(options) {
+      var _a;
+      ensure(options, "options");
+      if (typeof options === "string") {
+        options = {
+          url: options
+        };
+      }
+      options.url = String(options.url).trim();
+      if (!options.url.length) {
+        throw new Error(
+          "url is required."
+        );
+      }
+      ensure(options.url, "url");
+      if (options.headers !== void 0 && (options.headers === null || typeof options.headers !== "object")) {
+        throw new Error(
+          "headers must be an object."
+        );
+      }
+      const requestModel = {
+        url: options.url,
+        method: (options.method || "GET").toUpperCase(),
+        headers: options.headers || {},
+        body: (_a = options.body) != null ? _a : null,
+        credentials: options.credentials,
+        cache: options.cache,
+        mode: options.mode,
+        redirect: options.redirect,
+        keepalive: options.keepalive,
+        timeout: options.timeout
+      };
+      const methods = [
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+        "HEAD",
+        "OPTIONS"
+      ];
+      if (!methods.includes(requestModel.method)) {
+        throw new Error(
+          "Invalid HTTP method '" + requestModel.method + "'."
+        );
+      }
+      if (requestModel.method === "GET" || requestModel.method === "HEAD") {
+        requestModel.body = null;
+      }
+      return requestModel;
+    }
+    function mergeConfig(request, config) {
+      var _a, _b, _c, _d, _e, _f;
+      request.method = request.method || config.defaultMethod;
+      request.credentials = (_a = request.credentials) != null ? _a : config.credentials;
+      request.cache = (_b = request.cache) != null ? _b : config.cache;
+      request.mode = (_c = request.mode) != null ? _c : config.mode;
+      request.redirect = (_d = request.redirect) != null ? _d : config.redirect;
+      request.keepalive = (_e = request.keepalive) != null ? _e : config.keepalive;
+      request.timeout = (_f = request.timeout) != null ? _f : config.timeout;
+      request.headers = Object.assign(
+        {},
+        config.headers,
+        request.headers
+      );
+      return request;
+    }
+    function resolveUrl(request, config) {
+      if (!config.baseUrl) {
+        return request;
+      }
+      if (/^(https?:)?\/\//i.test(request.url)) {
+        return request;
+      }
+      request.url = config.baseUrl.replace(/\/$/, "") + "/" + request.url.replace(/^\//, "");
+      return request;
+    }
+    function createFetchOptions(request) {
+      var _a, _b;
+      const options = {
+        method: request.method,
+        headers: request.headers,
+        credentials: request.credentials,
+        cache: request.cache,
+        mode: request.mode,
+        redirect: request.redirect,
+        keepalive: request.keepalive
+      };
+      if (request.body !== null && request.body !== void 0 && request.method !== "GET" && request.method !== "HEAD") {
+        if (request.body instanceof FormData) {
+          options.body = request.body;
+        } else if (request.body instanceof URLSearchParams) {
+          options.body = request.body;
+        } else if (typeof request.body === "object") {
+          (_b = (_a = options.headers)["Content-Type"]) != null ? _b : _a["Content-Type"] = "application/json";
+          options.body = JSON.stringify(request.body);
+        } else {
+          options.body = request.body;
+        }
+      }
+      return options;
+    }
+    function executeRequest(request) {
+      const options = createFetchOptions(request);
+      return fetch(request.url, options);
+    }
+    async function send(options) {
+      let requestModel = normalizeOptions(options);
+      const config = Tech.Config.get();
+      requestModel = mergeConfig(requestModel, config);
+      requestModel = resolveUrl(requestModel, config);
+      return executeRequest(requestModel);
+    }
+    async function execute(options) {
+      const response = await send(options);
+      return Tech.Response.parse(response);
+    }
+    Tech.Request = Object.freeze({
+      send,
+      execute
+    });
+  })(window);
+
+  // src/network/tech.response.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    function ensure(response) {
+      if (!(response instanceof Response)) {
+        throw new Error(
+          "A valid Response object is required."
+        );
+      }
+    }
+    function getContentType(response) {
+      return (response.headers.get("Content-Type") || "").toLowerCase();
+    }
+    function detectType(contentType) {
+      if (contentType.includes("json"))
+        return "json";
+      if (contentType.includes("text/html"))
+        return "html";
+      if (contentType.includes("text/"))
+        return "text";
+      if (contentType.includes("xml"))
+        return "xml";
+      if (contentType.startsWith("image/") || contentType.startsWith("video/") || contentType.startsWith("audio/"))
+        return "blob";
+      return "text";
+    }
+    async function parseBody(response, contentType) {
+      if (response.status === 204 || response.status === 205) {
+        return null;
+      }
+      if (contentType.includes("json")) {
+        return await response.json();
+      }
+      if (contentType.includes("text/") || contentType.includes("xml")) {
+        return await response.text();
+      }
+      return await response.blob();
+    }
+    function extractHeaders(response) {
+      const headers = {};
+      response.headers.forEach(function(value, key) {
+        headers[key] = value;
+      });
+      return headers;
+    }
+    async function parse(response) {
+      ensure(response);
+      const contentType = getContentType(response);
+      return {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url,
+        redirected: response.redirected,
+        contentType,
+        type: detectType(contentType),
+        headers: extractHeaders(response),
+        data: await parseBody(
+          response,
+          contentType
+        ),
+        raw: response
+      };
+    }
+    function findTarget(element) {
+      const selector = element.getAttribute(
+        Tech.Constants.Attributes.TARGET
+      );
+      if (!selector)
+        return null;
+      return document.querySelector(selector);
+    }
+    function swap(target, html, mode) {
+      switch (mode) {
+        case Tech.Constants.Swap.OuterHtml:
+          target.outerHTML = html;
+          break;
+        case Tech.Constants.Swap.BeforeBegin:
+          target.insertAdjacentHTML(
+            "beforebegin",
+            html
+          );
+          break;
+        case Tech.Constants.Swap.AfterBegin:
+          target.insertAdjacentHTML(
+            "afterbegin",
+            html
+          );
+          break;
+        case Tech.Constants.Swap.BeforeEnd:
+          target.insertAdjacentHTML(
+            "beforeend",
+            html
+          );
+          break;
+        case Tech.Constants.Swap.AfterEnd:
+          target.insertAdjacentHTML(
+            "afterend",
+            html
+          );
+          break;
+        default:
+          target.innerHTML = html;
+          break;
+      }
+    }
+    async function handle(response, element) {
+      const result = await parse(response);
+      if (!result.ok) {
+        throw result;
+      }
+      const target = findTarget(element);
+      if (!target) {
+        return result;
+      }
+      if (result.type !== "html" && result.type !== "text") {
+        return result;
+      }
+      const mode = element.getAttribute(
+        Tech.Constants.Attributes.SWAP
+      ) || Tech.Constants.Swap.InnerHtml;
+      swap(
+        target,
+        result.data,
+        mode
+      );
+      return result;
+    }
+    Tech.Response = Object.freeze({
+      parse,
+      handle
+    });
+  })(window);
+
+  // src/engine/tech.dispatcher.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    function dispatch(element, eventName, detail) {
+      if (!eventName) {
+        throw new Error("Dispatcher event is required.");
+      }
+      element.dispatchEvent(
+        new CustomEvent(eventName, {
+          bubbles: true,
+          cancelable: true,
+          detail
+        })
+      );
+    }
+    Tech.Dispatcher = Object.freeze({
+      dispatch
+    });
+  })(window);
+
+  // src/engine/tech.registry.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    const handlers = /* @__PURE__ */ new Map();
+    function validateSelector(selector) {
+      if (typeof selector !== "string" || selector.trim().length === 0) {
+        throw new Error(
+          "Selector must be a non-empty string."
+        );
+      }
+    }
+    function validateName(name) {
+      if (typeof name !== "string" || name.trim().length === 0) {
+        throw new Error(
+          "Handler name must be a non-empty string."
+        );
+      }
+    }
+    function validateHandler(handler) {
+      if (handler === null || handler === void 0) {
+        throw new Error(
+          "Handler is required."
+        );
+      }
+      if (typeof handler.init !== "function") {
+        throw new Error(
+          "Handler must expose an init(element) function."
+        );
+      }
+    }
+    function register(name, selector, handler) {
+      validateName(name);
+      validateSelector(selector);
+      validateHandler(handler);
+      if (handlers.has(name)) {
+        throw new Error(
+          "Handler '" + name + "' already registered."
+        );
+      }
+      handlers.set(name, {
+        name,
+        selector,
+        handler,
+        enabled: true
+      });
+    }
+    function enable(name) {
+      const item = handlers.get(name);
+      if (item) {
+        item.enabled = true;
+      }
+    }
+    function disable(name) {
+      const item = handlers.get(name);
+      if (item) {
+        item.enabled = false;
+      }
+    }
+    function validateName(name) {
+      if (typeof name !== "string" || name.trim().length === 0) {
+        throw new Error(
+          "Handler name must be a non-empty string."
+        );
+      }
+    }
+    function unregister(name) {
+      validateName(name);
+      return handlers.delete(name);
+    }
+    function get(name) {
+      var _a;
+      validateName(name);
+      return (_a = handlers.get(name)) != null ? _a : null;
+    }
+    function getAll() {
+      return new Map(handlers);
+    }
+    function has(name) {
+      validateName(name);
+      return handlers.has(name);
+    }
+    function count() {
+      return handlers.size;
+    }
+    function clear() {
+      handlers.clear();
+    }
+    Tech.Registry = Object.freeze({
+      register,
+      unregister,
+      get,
+      getAll,
+      has,
+      count,
+      clear,
+      enable,
+      disable
+    });
+  })(window);
+
+  // src/engine/tech.scanner.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    function normalizeRoot(root) {
+      if (root === void 0 || root === null) {
+        return document;
+      }
+      if (!(root instanceof Element) && root !== document) {
+        throw new Error(
+          "Root must be Document or Element."
+        );
+      }
+      return root;
+    }
+    function scanSelector(root, selector, handler) {
+      const items = [];
+      const elements = root.querySelectorAll(selector);
+      elements.forEach(function(element) {
+        items.push({
+          selector,
+          element,
+          handler
+        });
+      });
+      return items;
+    }
+    function scan(root) {
+      root = normalizeRoot(root);
+      const registry = Tech.Registry.getAll();
+      const result = [];
+      registry.forEach(function(item) {
+        result.push(
+          ...scanSelector(
+            root,
+            item.selector,
+            item.handler
+          )
+        );
+      });
+      return result;
+    }
+    function query(selector, root) {
+      root = normalizeRoot(root);
+      return [
+        ...root.querySelectorAll(selector)
+      ];
+    }
+    function matches(element, selector) {
+      if (!(element instanceof Element)) {
+        return false;
+      }
+      return element.matches(selector);
+    }
+    Tech.Scanner = Object.freeze({
+      scan,
+      query,
+      matches
+    });
+  })(window);
+
+  // src/engine/tech.pipeline.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    function validate(options) {
+      if (!options) {
+        throw new Error("Pipeline options are required.");
+      }
+      if (!options.element) {
+        throw new Error("Pipeline element is required.");
+      }
+      if (!options.url) {
+        throw new Error("Pipeline url is required.");
+      }
+    }
+    function dispatch(element, eventName, data) {
+      Tech.Dispatcher.dispatch(
+        element,
+        eventName,
+        data
+      );
+    }
+    function showLoading(element) {
+      dispatch(
+        element,
+        Tech.Constants.Events.LOADING_START,
+        null
+      );
+    }
+    function hideLoading(element) {
+      dispatch(
+        element,
+        Tech.Constants.Events.LOADING_END,
+        null
+      );
+    }
+    function before(element, options) {
+      dispatch(
+        element,
+        Tech.Constants.Events.BEFORE,
+        options
+      );
+    }
+    function success(element, response) {
+      dispatch(
+        element,
+        Tech.Constants.Events.SUCCESS,
+        response
+      );
+    }
+    function error(element, ex) {
+      dispatch(
+        element,
+        Tech.Constants.Events.ERROR,
+        ex
+      );
+    }
+    function complete(element) {
+      dispatch(
+        element,
+        Tech.Constants.Events.COMPLETE,
+        null
+      );
+    }
+    function readConfirm(element) {
+      return element.getAttribute(
+        Tech.Constants.Attributes.CONFIRM
+      );
+    }
+    function checkConfirm(element) {
+      const text = readConfirm(element);
+      if (!text) {
+        return true;
+      }
+      return window2.confirm(text);
+    }
+    function buildRequest(options) {
+      return {
+        url: options.url,
+        method: options.method,
+        body: options.body,
+        headers: options.headers,
+        timeout: options.timeout,
+        cache: options.cache,
+        credentials: options.credentials,
+        mode: options.mode,
+        redirect: options.redirect,
+        keepalive: options.keepalive
+      };
+    }
+    async function executeRequest(options) {
+      return await Tech.Request.send(
+        buildRequest(options)
+      );
+    }
+    async function executeResponse(response, element) {
+      return await Tech.Response.handle(
+        response,
+        element
+      );
+    }
+    async function execute(options) {
+      validate(options);
+      const element = options.element;
+      if (!checkConfirm(element)) {
+        return null;
+      }
+      before(element, options);
+      showLoading(element);
+      try {
+        const response = await executeRequest(options);
+        await executeResponse(
+          response,
+          element
+        );
+        success(
+          element,
+          response
+        );
+        return response;
+      } catch (ex) {
+        error(
+          element,
+          ex
+        );
+        throw ex;
+      } finally {
+        hideLoading(element);
+        complete(element);
+      }
+    }
+    Tech.Pipeline = Object.freeze({
+      execute
+    });
+  })(window);
+
+  // src/engine/tech.engine.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    let started = false;
+    function initializeItem(item) {
+      if (!item.enabled) {
+        return;
+      }
+      if (!item.handler) {
+        return;
+      }
+      const elements = Tech.Scanner.query(item.selector);
+      elements.forEach(function(element) {
+        item.handler.init(element);
+      });
+    }
+    function start() {
+      if (started) {
+        return;
+      }
+      const registry = Tech.Registry.getAll();
+      registry.forEach(function(item) {
+        initializeItem(item);
+      });
+      started = true;
+    }
+    function refresh(name) {
+      const registry = Tech.Registry.getAll();
+      if (!name) {
+        registry.forEach(function(item2) {
+          initializeItem(item2);
+        });
+        return;
+      }
+      const item = Tech.Registry.get(name);
+      if (item) {
+        initializeItem(item);
+      }
+    }
+    function enable(name) {
+      const item = Tech.Registry.get(name);
+      if (!item) {
+        return;
+      }
+      Tech.Registry.enable(name);
+    }
+    function disable(name) {
+      const item = Tech.Registry.get(name);
+      if (!item) {
+        return;
+      }
+      Tech.Registry.disable(name);
+    }
+    function stop() {
+      started = false;
+    }
+    function isStarted() {
+      return started;
+    }
+    Tech.Engine = Object.freeze({
+      start,
+      stop,
+      refresh,
+      enable,
+      disable,
+      isStarted
+    });
+  })(window);
+
+  // src/handlers/form.handler.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    Tech.Handlers = Tech.Handlers || {};
+    function isInitialized(form) {
+      return form.__techInitialized === true;
+    }
+    function markInitialized(form) {
+      form.__techInitialized = true;
+    }
+    function getMethod(form) {
+      return (form.getAttribute("method") || Tech.Constants.Methods.Post).toUpperCase();
+    }
+    function getUrl(form) {
+      return form.getAttribute("action") || window2.location.href;
+    }
+    function getBody(form) {
+      return Tech.Utils.Form.serialize(form);
+    }
+    function buildOptions(form) {
+      return {
+        element: form,
+        url: getUrl(form),
+        method: getMethod(form),
+        body: getBody(form)
+      };
+    }
+    async function submit(e) {
+      e.preventDefault();
+      const form = e.currentTarget;
+      await Tech.Pipeline.execute(
+        buildOptions(form)
+      );
+    }
+    function init(form) {
+      if (!Tech.Utils.Type.isForm(form)) {
+        return;
+      }
+      if (isInitialized(form)) {
+        return;
+      }
+      markInitialized(form);
+      form.addEventListener(
+        "submit",
+        submit
+      );
+    }
+    function destroy(form) {
+      if (!Tech.Utils.Type.isForm(form)) {
+        return;
+      }
+      form.removeEventListener(
+        "submit",
+        submit
+      );
+      delete form.__techInitialized;
+    }
+    Tech.Handlers.Form = Object.freeze({
+      name: "form",
+      selector: `form[${Tech.Constants.Attributes.ROOT}]`,
+      init,
+      destroy,
+      submit
+    });
+  })(window);
+
+  // src/handlers/link.handler.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    Tech.Handlers = Tech.Handlers || {};
+    function isInitialized(link) {
+      return link.__techInitialized === true;
+    }
+    function markInitialized(link) {
+      link.__techInitialized = true;
+    }
+    function getMethod(link) {
+      return (link.getAttribute(Tech.Constants.Attributes.METHOD) || Tech.Constants.Methods.GET).toUpperCase();
+    }
+    function getUrl(link) {
+      return link.getAttribute(Tech.Constants.Attributes.URL) || link.href;
+    }
+    function buildOptions(link) {
+      return {
+        element: link,
+        url: getUrl(link),
+        method: getMethod(link),
+        body: null
+      };
+    }
+    async function click(e) {
+      e.preventDefault();
+      const link = e.currentTarget;
+      await Tech.Pipeline.execute(
+        buildOptions(link)
+      );
+    }
+    function init(link) {
+      if (!Tech.Utils.Type.isElement(link)) {
+        return;
+      }
+      if (isInitialized(link)) {
+        return;
+      }
+      markInitialized(link);
+      link.addEventListener(
+        "click",
+        click
+      );
+    }
+    function destroy(link) {
+      if (!Tech.Utils.Type.isElement(link)) {
+        return;
+      }
+      link.removeEventListener(
+        "click",
+        click
+      );
+      delete link.__techInitialized;
+    }
+    Tech.Handlers.Link = Object.freeze({
+      name: "link",
+      selector: `a[${Tech.Constants.Attributes.ROOT}]`,
+      init,
+      destroy,
+      click
+    });
+  })(window);
+
+  // src/handlers/button.handler.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    Tech.Handlers = Tech.Handlers || {};
+    async function click(e) {
+      e.preventDefault();
+      const button = e.currentTarget;
+      let url = button.getAttribute(
+        Tech.Constants.Attributes.URL
+      );
+      const method = (button.getAttribute(
+        Tech.Constants.Attributes.METHOD
+      ) || "GET").toUpperCase();
+      let body = null;
+      if (method === "GET") {
+        url = Tech.Data.buildUrl(button, url);
+      } else {
+        body = Tech.Data.buildBody(button, method);
+      }
+      const options = {
+        element: button,
+        url,
+        method,
+        target: button.getAttribute(
+          Tech.Constants.Attributes.TARGET
+        ),
+        body
+      };
+      await Tech.Pipeline.execute(options);
+    }
+    function init(element) {
+      if (element.__techInitialized)
+        return;
+      element.addEventListener(
+        "click",
+        click
+      );
+      element.__techInitialized = true;
+    }
+    Tech.Handlers.Button = Object.freeze({
+      name: "button",
+      selector: "button[data-tech]",
+      enabled: true,
+      init
+    });
+  })(window);
+
+  // src/handlers/trigger.handler.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    Tech.Handlers = Tech.Handlers || {};
+    async function execute(element) {
+      let target = element.getAttribute(
+        Tech.Constants.Attributes.TARGET
+      );
+      let url = element.getAttribute(
+        Tech.Constants.Attributes.URL
+      );
+      const method = (element.getAttribute(
+        Tech.Constants.Attributes.METHOD
+      ) || "GET").toUpperCase();
+      let body = null;
+      if (method === "GET") {
+        url = Tech.Data.buildUrl(element, url);
+      } else {
+        body = Tech.Data.buildBody(element, method);
+      }
+      const options = {
+        element,
+        url,
+        method,
+        target,
+        body
+      };
+      await Tech.Pipeline.execute(options);
+    }
+    function onTrigger(e) {
+      e.preventDefault();
+      execute(e.currentTarget);
+    }
+    function init(element) {
+      if (element.__techInitialized)
+        return;
+      const trigger = element.getAttribute(
+        Tech.Constants.Attributes.TRIGGER
+      ) || "click";
+      element.addEventListener(
+        trigger,
+        onTrigger
+      );
+      element.__techInitialized = true;
+    }
+    Tech.Handlers.Trigger = Object.freeze({
+      name: "trigger",
+      selector: "[data-tech-trigger]",
+      enabled: true,
+      init
+    });
+  })(window);
+
+  // src/tech.bootstrap.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    let bootstrapped = false;
+    function registerHandlers() {
+      registerHandler(Tech.Handlers.Form);
+      registerHandler(Tech.Handlers.Link);
+      registerHandler(Tech.Handlers.Button);
+      registerHandler(Tech.Handlers.Trigger);
+    }
+    function registerHandler(handler) {
+      if (!handler) {
+        return;
+      }
+      Tech.Registry.register(
+        handler.name,
+        handler.selector,
+        handler
+      );
+    }
+    function start() {
+      if (bootstrapped) {
+        return;
+      }
+      registerHandlers();
+      Tech.Engine.start();
+      bootstrapped = true;
+    }
+    function restart() {
+      Tech.Engine.stop();
+      Tech.Registry.clear();
+      bootstrapped = false;
+      start();
+    }
+    function isStarted() {
+      return bootstrapped;
+    }
+    document.addEventListener(
+      "DOMContentLoaded",
+      function() {
+        start();
+      }
+    );
+    Tech.Bootstrap = Object.freeze({
+      start,
+      restart,
+      isStarted
+    });
+  })(window);
+})();
+/*!
+* ----------------------------------------------------------------------------
+* Tech.js
+* A lightweight Attribute-Based Fetch Library
+* ----------------------------------------------------------------------------
+* Copyright (c) 2026
+* Licensed under the MIT License.
+* ----------------------------------------------------------------------------
+*/
+/*!
+* Tech.js
+* tech.constants.js
+* Version : 1.0.0
+*/
+/*!
+* Tech.js
+* tech.utils.js
+* Version : 1.0.0
+*/
+/*!
+* ----------------------------------------------------------------------------
+* Tech.js
+* tech.events.js
+* Version : 1.0.0
+* ----------------------------------------------------------------------------
+* Internal Publish / Subscribe Event Bus
+* ----------------------------------------------------------------------------
+*/
+/*!
+* ----------------------------------------------------------------------------
+* Tech.js
+* tech.data.js
+* Version : 1.0.0
+* ----------------------------------------------------------------------------
+*/
+/*!
+* ----------------------------------------------------------------------------
+* Tech.js
+* tech.response.js
+* Version : 1.0.0
+* ----------------------------------------------------------------------------
+* Response Handler
+* ----------------------------------------------------------------------------
+*/
+/*!
+* ----------------------------------------------------------------------------
+* Tech.js
+* Dispatcher
+* ----------------------------------------------------------------------------
+*/
+/*!
+* ----------------------------------------------------------------------------
+* Tech.js
+* tech.registry.js
+* Version : 1.0.0
+* ----------------------------------------------------------------------------
+* Handler Registry
+* ----------------------------------------------------------------------------
+*/
+/*!
+* ----------------------------------------------------------------------------
+* Tech.js
+* tech.scanner.js
+* Version : 1.0.0
+* ----------------------------------------------------------------------------
+* DOM Scanner
+* ----------------------------------------------------------------------------
+*/
+/*!
+* ----------------------------------------------------------------------------
+* Tech.js
+* tech.pipeline.js
+* Version : 1.0.0
+* ----------------------------------------------------------------------------
+* Request Pipeline
+* ----------------------------------------------------------------------------
+*/
+/*!
+* ----------------------------------------------------------------------------
+* Tech.js
+* tech.engine.js
+* Version : 1.0.0
+* ----------------------------------------------------------------------------
+* Engine
+* ----------------------------------------------------------------------------
+*/
+/*!
+* ----------------------------------------------------------------------------
+* Tech.js
+* form.handler.js
+* Version : 1.0.0
+* ----------------------------------------------------------------------------
+* Form Handler
+* ----------------------------------------------------------------------------
+*/
+/*!
+* ----------------------------------------------------------------------------
+* Tech.js
+* link.handler.js
+* Version : 1.0.0
+* ----------------------------------------------------------------------------
+* Link Handler
+* ----------------------------------------------------------------------------
+*/
+/*!
+* ----------------------------------------------------------------------------
+* Tech.js
+* button.handler.js
+* Version : 1.0.0
+* ----------------------------------------------------------------------------
+*/
+/*!
+* ----------------------------------------------------------------------------
+* Tech.js
+* trigger.handler.js
+* Version : 1.0.0
+* ----------------------------------------------------------------------------
+*/
+/*!
+* ----------------------------------------------------------------------------
+* Tech.js
+* tech.bootstrap.js
+* Version : 1.0.0
+* ----------------------------------------------------------------------------
+* Bootstrap
+* ----------------------------------------------------------------------------
+*/
+//# sourceMappingURL=tech.js.map
