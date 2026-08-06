@@ -85,6 +85,97 @@
 
     }
 
+
+    //------------------------------------------------------
+    // Global Success Notification
+    //------------------------------------------------------
+
+    document.addEventListener(
+        Tech.Constants.Events.SUCCESS,
+        function (e) {
+
+            const element = e.target;
+
+            if (!Tech.NotificationPolicy.allow(element, "success")) {
+                return;
+            }
+
+            const response = e.detail;
+
+            const message =
+                Tech.NotificationMessage.fromResponse(response)
+                ||
+                "Operation completed successfully.";
+
+            Tech.Notify.success(message);
+
+        }
+    );
+
+    //------------------------------------------------------
+    // Global Error Notification
+    //------------------------------------------------------
+
+    document.addEventListener(
+        Tech.Constants.Events.ERROR,
+        function (e) {
+
+            const element = e.target;
+
+            if (!Tech.NotificationPolicy.allow(element, "error")) {
+                return;
+            }
+
+            const error = e.detail;
+
+            let message =
+                Tech.NotificationMessage.fromError(error)
+                ||
+                "An unexpected error occurred.";
+
+            if (!message && error?.status) {
+
+                message =
+                    "Request failed (" +
+                    error.status +
+                    ").";
+
+            }
+
+            Tech.Notify.error(message);
+
+        }
+    );
+
+
+
+
+    window.addEventListener(
+        "popstate",
+        function () {
+
+            window.location.reload();
+
+        }
+    );
+
+    document.addEventListener(
+        Tech.Constants.Events.PARTIAL_LOADED,
+        function (e) {
+
+            Tech.Engine.refresh();
+
+            const target = e.detail.target;
+
+            target.querySelectorAll('form').forEach(function (form) {
+
+                Tech.Validation.validate(form);
+
+            });
+
+        }
+    );
+
     function restart() {
 
         Tech.Engine.stop();

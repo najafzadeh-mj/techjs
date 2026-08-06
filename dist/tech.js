@@ -324,7 +324,11 @@ var Tech = (() => {
         ENCODING: "data-tech-encoding",
         DATA: "data-tech-data",
         DATAFORM: "data-tech-data-form",
-        SOURCE: "data-tech-source"
+        SOURCE: "data-tech-source",
+        SUCCESS: "data-tech-success",
+        ERROR: "data-tech-error",
+        COMPLETE: "data-tech-complete",
+        NOTIFY: "data-tech-notify"
       }),
       //----------------------------------------------------------
       // Swap Mode
@@ -947,27 +951,22 @@ var Tech = (() => {
     function swap(target, html, mode) {
       switch (mode) {
         case Tech.Constants.Swap.OuterHtml:
+        case "outer":
           target.outerHTML = html;
           break;
+        case Tech.Constants.Swap.Before:
         case Tech.Constants.Swap.BeforeBegin:
+        case "before":
+        case "beforebegin":
           target.insertAdjacentHTML(
             "beforebegin",
             html
           );
           break;
-        case Tech.Constants.Swap.AfterBegin:
-          target.insertAdjacentHTML(
-            "afterbegin",
-            html
-          );
-          break;
-        case Tech.Constants.Swap.BeforeEnd:
-          target.insertAdjacentHTML(
-            "beforeend",
-            html
-          );
-          break;
+        case Tech.Constants.Swap.After:
         case Tech.Constants.Swap.AfterEnd:
+        case "after":
+        case "afterend":
           target.insertAdjacentHTML(
             "afterend",
             html
@@ -998,6 +997,15 @@ var Tech = (() => {
         result.data,
         mode
       );
+      Tech.Dispatcher.dispatch(
+        target,
+        Tech.Constants.Events.PARTIAL_LOADED,
+        {
+          target,
+          html: result.data,
+          mode
+        }
+      );
       return result;
     }
     Tech.Response = Object.freeze({
@@ -1011,9 +1019,38 @@ var Tech = (() => {
     "use strict";
     window2.Tech = window2.Tech || {};
     const Tech = window2.Tech;
+    const CALLBACK_ATTRIBUTES = Object.freeze({
+      success: Tech.Constants.Attributes.SUCCESS,
+      error: Tech.Constants.Attributes.ERROR,
+      complete: Tech.Constants.Attributes.COMPLETE
+    });
+    function invokeCallback(element, eventName, detail) {
+      const attr = CALLBACK_ATTRIBUTES[eventName];
+      if (!attr) {
+        return;
+      }
+      const fnName = element.getAttribute(attr);
+      if (!fnName) {
+        return;
+      }
+      const fn = window2[fnName];
+      if (typeof fn !== "function") {
+        console.warn(
+          "Tech.js callback '" + fnName + "' not found."
+        );
+        return;
+      }
+      try {
+        fn(detail, element);
+      } catch (ex) {
+        console.error(ex);
+      }
+    }
     function dispatch(element, eventName, detail) {
       if (!eventName) {
-        throw new Error("Dispatcher event is required.");
+        throw new Error(
+          "Dispatcher event is required."
+        );
       }
       element.dispatchEvent(
         new CustomEvent(eventName, {
@@ -1022,6 +1059,17 @@ var Tech = (() => {
           detail
         })
       );
+      switch (eventName) {
+        case Tech.Constants.Events.SUCCESS:
+          invokeCallback(element, "success", detail);
+          break;
+        case Tech.Constants.Events.ERROR:
+          invokeCallback(element, "error", detail);
+          break;
+        case Tech.Constants.Events.COMPLETE:
+          invokeCallback(element, "complete", detail);
+          break;
+      }
     }
     Tech.Dispatcher = Object.freeze({
       dispatch
@@ -1192,6 +1240,386 @@ var Tech = (() => {
     });
   })(window);
 
+  // src/engine/tech.confirm.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    function hasBootstrap() {
+      console.log("bootstrap =", window2.bootstrap);
+      return !!window2.bootstrap;
+    }
+    function fallbackConfirm(message) {
+      return Promise.resolve(
+        window2.confirm(message)
+      );
+    }
+    function createModal() {
+      let modal = document.getElementById("tech-confirm-modal");
+      if (modal) {
+        return modal;
+      }
+      const html = `
+<div class="modal fade" id="tech-confirm-modal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">\u062A\u0623\u06CC\u06CC\u062F \u0639\u0645\u0644\u06CC\u0627\u062A</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <p class="mb-0" id="tech-confirm-message"></p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          \u0627\u0646\u0635\u0631\u0627\u0641
+        </button>
+
+        <button type="button" class="btn btn-danger" id="tech-confirm-ok">
+          \u062A\u0623\u06CC\u06CC\u062F
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>`;
+      document.body.insertAdjacentHTML(
+        "beforeend",
+        html
+      );
+      return document.getElementById(
+        "tech-confirm-modal"
+      );
+    }
+    function bootstrapConfirm(message) {
+      return new Promise(function(resolve) {
+        const modalElement = createModal();
+        modalElement.querySelector(
+          "#tech-confirm-message"
+        ).textContent = message;
+        const okButton = modalElement.querySelector(
+          "#tech-confirm-ok"
+        );
+        const modal = bootstrap.Modal.getOrCreateInstance(
+          modalElement
+        );
+        let resolved = false;
+        function cleanup() {
+          okButton.removeEventListener(
+            "click",
+            onOk
+          );
+          modalElement.removeEventListener(
+            "hidden.bs.modal",
+            onHidden
+          );
+        }
+        function onOk() {
+          resolved = true;
+          cleanup();
+          modal.hide();
+          resolve(true);
+        }
+        function onHidden() {
+          if (!resolved) {
+            cleanup();
+            resolve(false);
+          }
+        }
+        okButton.addEventListener(
+          "click",
+          onOk
+        );
+        modalElement.addEventListener(
+          "hidden.bs.modal",
+          onHidden
+        );
+        modal.show();
+      });
+    }
+    async function show(message) {
+      if (!message) {
+        return true;
+      }
+      if (hasBootstrap()) {
+        return await bootstrapConfirm(message);
+      }
+      return await fallbackConfirm(message);
+    }
+    Tech.Confirm = Object.freeze({
+      show
+    });
+  })(window);
+
+  // src/engine/tech.history.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    function shouldPush(element) {
+      return element.getAttribute(
+        Tech.Constants.Attributes.PUSHURL
+      ) === "true";
+    }
+    function shouldReplace(element) {
+      return element.getAttribute(
+        Tech.Constants.Attributes.REPLACEURL
+      ) === "true";
+    }
+    function resolveUrl(element, response) {
+      return response.url || window2.location.href;
+    }
+    function update(element, response) {
+      const url = resolveUrl(element, response);
+      if (shouldReplace(element)) {
+        history.replaceState(
+          { url },
+          "",
+          url
+        );
+        return;
+      }
+      if (shouldPush(element)) {
+        history.pushState(
+          { url },
+          "",
+          url
+        );
+      }
+    }
+    Tech.History = Object.freeze({
+      update
+    });
+  })(window);
+
+  // src/engine/tech.validation.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    function hasJQuery() {
+      return !!window2.jQuery;
+    }
+    function hasValidator() {
+      return hasJQuery() && !!jQuery.fn.validate;
+    }
+    function reset(form) {
+      if (!hasValidator(form)) {
+        return;
+      }
+      window2.jQuery(form).validate().resetForm();
+    }
+    function hasUnobtrusive() {
+      return hasJQuery() && !!jQuery.validator && !!jQuery.validator.unobtrusive;
+    }
+    function parse(form) {
+      if (!hasUnobtrusive()) {
+        return;
+      }
+      jQuery.validator.unobtrusive.parse(form);
+    }
+    function validate(form) {
+      if (!form) {
+        return true;
+      }
+      if (!hasValidator()) {
+        return true;
+      }
+      parse(form);
+      return jQuery(form).valid();
+    }
+    Tech.Validation = Object.freeze({
+      validate
+    });
+  })(window);
+
+  // src/engine/tech.notification.policy.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    function getMode(element) {
+      if (!element) {
+        return "none";
+      }
+      return (element.getAttribute(
+        Tech.Constants.Attributes.NOTIFY
+      ) || "none").toLowerCase();
+    }
+    function allow(element, type) {
+      const mode = getMode(element);
+      switch (mode) {
+        case "true":
+        case "all":
+          return true;
+        case "success":
+          return type === "success";
+        case "error":
+          return type === "error";
+        default:
+          return false;
+      }
+    }
+    Tech.NotificationPolicy = Object.freeze({
+      allow
+    });
+  })(window);
+
+  // src/engine/tech.notification.message.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    function fromResponse(response) {
+      if (!response) {
+        return null;
+      }
+      const data = response.data;
+      if (!data) {
+        return null;
+      }
+      if (typeof data.message === "string" && data.message.trim()) {
+        return data.message;
+      }
+      if (typeof data.Message === "string" && data.Message.trim()) {
+        return data.Message;
+      }
+      return null;
+    }
+    function fromError(error) {
+      if (!error) {
+        return null;
+      }
+      const data = error.data;
+      if (!data) {
+        return null;
+      }
+      if (typeof data.message === "string" && data.message.trim()) {
+        return data.message;
+      }
+      if (typeof data.Message === "string" && data.Message.trim()) {
+        return data.Message;
+      }
+      return null;
+    }
+    Tech.NotificationMessage = Object.freeze({
+      fromResponse,
+      fromError
+    });
+  })(window);
+
+  // src/engine/tech.notify.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    function hasBootstrap() {
+      return !!window2.bootstrap;
+    }
+    function ensureContainer() {
+      let container = document.getElementById("tech-toast-container");
+      if (container) {
+        return container;
+      }
+      container = document.createElement("div");
+      container.id = "tech-toast-container";
+      container.className = "toast-container position-fixed top-0 end-0 p-3";
+      container.style.zIndex = "1080";
+      document.body.appendChild(container);
+      return container;
+    }
+    function createToast(message, title, type) {
+      const bgClass = {
+        success: "text-bg-success",
+        error: "text-bg-danger",
+        warning: "text-bg-warning",
+        info: "text-bg-primary"
+      }[type] || "text-bg-primary";
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = `
+<div class="toast ${bgClass}"
+     role="alert"
+     aria-live="assertive"
+     aria-atomic="true">
+
+    <div class="toast-header">
+
+        <strong class="me-auto">${title}</strong>
+
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="toast"></button>
+
+    </div>
+
+    <div class="toast-body">
+
+        ${message}
+
+    </div>
+
+</div>`;
+      return wrapper.firstElementChild;
+    }
+    function showBootstrapToast(message, title, type) {
+      const container = ensureContainer();
+      const toastElement = createToast(message, title, type);
+      container.appendChild(toastElement);
+      const toast = bootstrap.Toast.getOrCreateInstance(
+        toastElement,
+        {
+          delay: 4e3,
+          autohide: true
+        }
+      );
+      toastElement.addEventListener(
+        "hidden.bs.toast",
+        function() {
+          toastElement.remove();
+        }
+      );
+      toast.show();
+    }
+    function showFallback(message, title) {
+      window2.alert(title + ": " + message);
+    }
+    function notify(message, title, type) {
+      if (!message) {
+        return;
+      }
+      if (hasBootstrap()) {
+        showBootstrapToast(
+          message,
+          title,
+          type
+        );
+        return;
+      }
+      showFallback(message, title);
+    }
+    function success(message, title = "Success") {
+      notify(message, title, "success");
+    }
+    function error(message, title = "Error") {
+      notify(message, title, "error");
+    }
+    function warning(message, title = "Warning") {
+      notify(message, title, "warning");
+    }
+    function info(message, title = "Info") {
+      notify(message, title, "info");
+    }
+    Tech.Notify = Object.freeze({
+      success,
+      error,
+      warning,
+      info
+    });
+  })(window);
+
   // src/engine/tech.pipeline.js
   (function(window2) {
     "use strict";
@@ -1262,12 +1690,9 @@ var Tech = (() => {
         Tech.Constants.Attributes.CONFIRM
       );
     }
-    function checkConfirm(element) {
+    async function checkConfirm(element) {
       const text = readConfirm(element);
-      if (!text) {
-        return true;
-      }
-      return window2.confirm(text);
+      return await Tech.Confirm.show(text);
     }
     function buildRequest(options) {
       return {
@@ -1297,7 +1722,7 @@ var Tech = (() => {
     async function execute(options) {
       validate(options);
       const element = options.element;
-      if (!checkConfirm(element)) {
+      if (!await checkConfirm(element)) {
         return null;
       }
       before(element, options);
@@ -1307,6 +1732,10 @@ var Tech = (() => {
         await executeResponse(
           response,
           element
+        );
+        Tech.History.update(
+          element,
+          response
         );
         success(
           element,
@@ -1327,6 +1756,76 @@ var Tech = (() => {
     Tech.Pipeline = Object.freeze({
       execute
     });
+  })(window);
+
+  // src/engine/tech.loading.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    function findIndicator(element) {
+      const selector = element.getAttribute(
+        Tech.Constants.Attributes.LOADING
+      );
+      if (!selector) {
+        return null;
+      }
+      return element.querySelector(selector);
+    }
+    function disableElement(element) {
+      element.classList.add(
+        Tech.Constants.Css.Loading
+      );
+      const controls = element.querySelectorAll(
+        "button, input, select, textarea"
+      );
+      controls.forEach(function(control) {
+        control.disabled = true;
+      });
+    }
+    function enableElement(element) {
+      element.classList.remove(
+        Tech.Constants.Css.Loading
+      );
+      const controls = element.querySelectorAll(
+        "button, input, select, textarea"
+      );
+      controls.forEach(function(control) {
+        control.disabled = false;
+      });
+    }
+    function showIndicator(indicator) {
+      if (!indicator) {
+        return;
+      }
+      indicator.classList.remove("d-none");
+    }
+    function hideIndicator(indicator) {
+      if (!indicator) {
+        return;
+      }
+      indicator.classList.add("d-none");
+    }
+    function onLoadingStart(event) {
+      const element = event.target;
+      const indicator = findIndicator(element);
+      disableElement(element);
+      showIndicator(indicator);
+    }
+    function onLoadingEnd(event) {
+      const element = event.target;
+      const indicator = findIndicator(element);
+      enableElement(element);
+      hideIndicator(indicator);
+    }
+    document.addEventListener(
+      Tech.Constants.Events.LOADING_START,
+      onLoadingStart
+    );
+    document.addEventListener(
+      Tech.Constants.Events.LOADING_END,
+      onLoadingEnd
+    );
   })(window);
 
   // src/engine/tech.engine.js
@@ -1413,10 +1912,14 @@ var Tech = (() => {
       form.__techInitialized = true;
     }
     function getMethod(form) {
-      return (form.getAttribute("method") || Tech.Constants.Methods.Post).toUpperCase();
+      return (form.getAttribute(
+        Tech.Constants.Attributes.METHOD
+      ) || form.getAttribute("method") || Tech.Constants.Methods.GET).toUpperCase();
     }
     function getUrl(form) {
-      return form.getAttribute("action") || window2.location.href;
+      return form.getAttribute(
+        Tech.Constants.Attributes.URL
+      ) || form.getAttribute("action") || window2.location.href;
     }
     function getBody(form) {
       return Tech.Utils.Form.serialize(form);
@@ -1432,6 +1935,14 @@ var Tech = (() => {
     async function submit(e) {
       e.preventDefault();
       const form = e.currentTarget;
+      if (!Tech.Validation.validate(form)) {
+        Tech.Dispatcher.dispatch(
+          form,
+          Tech.Constants.Events.VALIDATION_ERROR,
+          null
+        );
+        return;
+      }
       await Tech.Pipeline.execute(
         buildOptions(form)
       );
@@ -1667,6 +2178,49 @@ var Tech = (() => {
       Tech.Engine.start();
       bootstrapped = true;
     }
+    document.addEventListener(
+      Tech.Constants.Events.SUCCESS,
+      function(e) {
+        const element = e.target;
+        if (!Tech.NotificationPolicy.allow(element, "success")) {
+          return;
+        }
+        const response = e.detail;
+        const message = Tech.NotificationMessage.fromResponse(response) || "Operation completed successfully.";
+        Tech.Notify.success(message);
+      }
+    );
+    document.addEventListener(
+      Tech.Constants.Events.ERROR,
+      function(e) {
+        const element = e.target;
+        if (!Tech.NotificationPolicy.allow(element, "error")) {
+          return;
+        }
+        const error = e.detail;
+        let message = Tech.NotificationMessage.fromError(error) || "An unexpected error occurred.";
+        if (!message && (error == null ? void 0 : error.status)) {
+          message = "Request failed (" + error.status + ").";
+        }
+        Tech.Notify.error(message);
+      }
+    );
+    window2.addEventListener(
+      "popstate",
+      function() {
+        window2.location.reload();
+      }
+    );
+    document.addEventListener(
+      Tech.Constants.Events.PARTIAL_LOADED,
+      function(e) {
+        Tech.Engine.refresh();
+        const target = e.detail.target;
+        target.querySelectorAll("form").forEach(function(form) {
+          Tech.Validation.validate(form);
+        });
+      }
+    );
     function restart() {
       Tech.Engine.stop();
       Tech.Registry.clear();
@@ -1734,10 +2288,12 @@ var Tech = (() => {
 * ----------------------------------------------------------------------------
 */
 /*!
-* ----------------------------------------------------------------------------
+
+* ---
 * Tech.js
 * Dispatcher
-* ----------------------------------------------------------------------------
+* ---
+
 */
 /*!
 * ----------------------------------------------------------------------------
@@ -1758,6 +2314,42 @@ var Tech = (() => {
 * ----------------------------------------------------------------------------
 */
 /*!
+ * ----------------------------------------------------------------------------
+ * Tech.js
+ * tech.confirm.js
+ * ----------------------------------------------------------------------------
+ */
+/*!
+ * ----------------------------------------------------------------------------
+ * Tech.js
+ * tech.history.js
+ * ----------------------------------------------------------------------------
+ */
+/*!
+ * ----------------------------------------------------------------------------
+ * Tech.js
+ * tech.validation.js
+ * ----------------------------------------------------------------------------
+ */
+/*!
+ * ----------------------------------------------------------------------------
+ * Tech.js
+ * tech.notification.policy.js
+ * ----------------------------------------------------------------------------
+ */
+/*!
+ * ----------------------------------------------------------------------------
+ * Tech.js
+ * tech.notification.message.js
+ * ----------------------------------------------------------------------------
+ */
+/*!
+ * ----------------------------------------------------------------------------
+ * Tech.js
+ * tech.notify.js
+ * ----------------------------------------------------------------------------
+ */
+/*!
 * ----------------------------------------------------------------------------
 * Tech.js
 * tech.pipeline.js
@@ -1766,6 +2358,12 @@ var Tech = (() => {
 * Request Pipeline
 * ----------------------------------------------------------------------------
 */
+/*!
+ * ----------------------------------------------------------------------------
+ * Tech.js
+ * tech.loading.js
+ * ----------------------------------------------------------------------------
+ */
 /*!
 * ----------------------------------------------------------------------------
 * Tech.js

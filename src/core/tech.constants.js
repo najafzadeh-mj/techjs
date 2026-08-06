@@ -172,7 +172,15 @@
 
             DATAFORM: "data-tech-data-form",
 
-            SOURCE:"data-tech-source"
+            SOURCE: "data-tech-source",
+
+            SUCCESS: "data-tech-success",
+
+            ERROR: "data-tech-error",
+
+            COMPLETE: "data-tech-complete",
+
+            NOTIFY: "data-tech-notify",
 
         }),
 
@@ -192,14 +200,15 @@
 
             BeforeEnd: "beforeend",
 
-            AfterEnd: "afterend"
+            AfterEnd: "afterend",
+
 
         }),
 
         //----------------------------------------------------------
         // Css Classes
         //----------------------------------------------------------
-        
+
         Css: Object.freeze({
 
             Loading: "tech-loading",

@@ -43,18 +43,38 @@
     function getMethod(form) {
 
         return (
-            form.getAttribute("method") ||
-            Tech.Constants.Methods.Post
+            form.getAttribute(
+                Tech.Constants.Attributes.METHOD
+            )
+            ||
+            form.getAttribute("method")
+            ||
+            Tech.Constants.Methods.GET
         ).toUpperCase();
+
+        // return (
+        //     form.getAttribute("method") ||
+        //     Tech.Constants.Methods.Post
+        // ).toUpperCase();
 
     }
 
     function getUrl(form) {
 
         return (
-            form.getAttribute("action") ||
+            form.getAttribute(
+                Tech.Constants.Attributes.URL
+            )
+            ||
+            form.getAttribute("action")
+            ||
             window.location.href
         );
+
+        // return (
+        //     form.getAttribute("action") ||
+        //     window.location.href
+        // );
 
     }
 
@@ -90,6 +110,22 @@
 
         const form = e.currentTarget;
 
+        //--------------------------------------------------------------
+        // NEW: ASP.NET Core validation
+        //--------------------------------------------------------------
+
+        if (!Tech.Validation.validate(form)) {
+
+            Tech.Dispatcher.dispatch(
+                form,
+                Tech.Constants.Events.VALIDATION_ERROR,
+                null
+            );
+
+            return;
+
+        }
+        
         await Tech.Pipeline.execute(
 
             buildOptions(form)

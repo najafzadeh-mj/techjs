@@ -189,14 +189,19 @@
 
     function swap(target, html, mode) {
 
+
         switch (mode) {
 
             case Tech.Constants.Swap.OuterHtml:
+            case "outer":
 
                 target.outerHTML = html;
                 break;
 
+            case Tech.Constants.Swap.Before:
             case Tech.Constants.Swap.BeforeBegin:
+            case "before":
+            case "beforebegin":
 
                 target.insertAdjacentHTML(
                     "beforebegin",
@@ -204,23 +209,10 @@
                 );
                 break;
 
-            case Tech.Constants.Swap.AfterBegin:
-
-                target.insertAdjacentHTML(
-                    "afterbegin",
-                    html
-                );
-                break;
-
-            case Tech.Constants.Swap.BeforeEnd:
-
-                target.insertAdjacentHTML(
-                    "beforeend",
-                    html
-                );
-                break;
-
+            case Tech.Constants.Swap.After:
             case Tech.Constants.Swap.AfterEnd:
+            case "after":
+            case "afterend":
 
                 target.insertAdjacentHTML(
                     "afterend",
@@ -232,8 +224,53 @@
 
                 target.innerHTML = html;
                 break;
-
         }
+
+        // switch (mode) {
+
+        //     case Tech.Constants.Swap.OuterHtml:
+
+        //         target.outerHTML = html;
+        //         break;
+
+        //     case Tech.Constants.Swap.BeforeBegin:
+
+        //         target.insertAdjacentHTML(
+        //             "beforebegin",
+        //             html
+        //         );
+        //         break;
+
+        //     case Tech.Constants.Swap.AfterBegin:
+
+        //         target.insertAdjacentHTML(
+        //             "afterbegin",
+        //             html
+        //         );
+        //         break;
+
+        //     case Tech.Constants.Swap.BeforeEnd:
+
+        //         target.insertAdjacentHTML(
+        //             "beforeend",
+        //             html
+        //         );
+        //         break;
+
+        //     case Tech.Constants.Swap.AfterEnd:
+
+        //         target.insertAdjacentHTML(
+        //             "afterend",
+        //             html
+        //         );
+        //         break;
+
+        //     default:
+
+        //         target.innerHTML = html;
+        //         break;
+
+        // }
 
     }
 
@@ -274,6 +311,10 @@
             ) ||
             Tech.Constants.Swap.InnerHtml;
 
+        //------------------------------------------------------
+        // DOM Swap
+        //------------------------------------------------------
+
         swap(
 
             target,
@@ -284,6 +325,20 @@
 
         );
 
+        //------------------------------------------------------
+        // NEW: notify after swap
+        //------------------------------------------------------
+
+        Tech.Dispatcher.dispatch(
+            target,
+            Tech.Constants.Events.PARTIAL_LOADED,
+            {
+                target: target,
+                html: result.data,
+                mode: mode
+            }
+        );
+        
         return result;
 
     }

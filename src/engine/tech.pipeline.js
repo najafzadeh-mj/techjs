@@ -124,15 +124,11 @@
 
     }
 
-    function checkConfirm(element) {
+    async function checkConfirm(element) {
 
         const text = readConfirm(element);
 
-        if (!text) {
-            return true;
-        }
-
-        return window.confirm(text);
+        return await Tech.Confirm.show(text);
 
     }
 
@@ -191,7 +187,7 @@
 
         const element = options.element;
 
-        if (!checkConfirm(element)) {
+        if (! await checkConfirm(element)) {
             return null;
         }
 
@@ -207,6 +203,15 @@
             await executeResponse(
                 response,
                 element
+            );
+
+            //------------------------------------------------------
+            // NEW: update browser history
+            //------------------------------------------------------
+
+            Tech.History.update(
+                element,
+                response
             );
 
             success(

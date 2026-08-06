@@ -10,7 +10,14 @@ import './network/tech.response.js';
 import './engine/tech.dispatcher.js';
 import './engine/tech.registry.js';
 import './engine/tech.scanner.js';
+import './engine/tech.confirm.js';
+import './engine/tech.history.js';
+import './engine/tech.validation.js';
+import './engine/tech.notification.policy.js';
+import './engine/tech.notification.message.js';
+import './engine/tech.notify.js';
 import './engine/tech.pipeline.js';
+import './engine/tech.loading.js';
 import './engine/tech.engine.js';
 
 import './handlers/form.handler.js';
