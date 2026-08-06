@@ -167,7 +167,7 @@
     // Form
     //=========================================================
 
-   
+
 
     Utils.Form = Object.freeze({
 
@@ -232,14 +232,29 @@
         antiForgery() {
 
             const cfg =
-                Tech.Config.get("antiForgery");
+                Tech.Config.get('antiForgery');
 
-            if (!cfg.enabled)
+            if (!cfg.enabled) {
                 return null;
+            }
 
-            return document.querySelector(
+            if (form) {
+
+                const input = form.querySelector(
+                    `input[name="${cfg.fieldName}"]`
+                );
+
+                if (input) {
+                    return input.value;
+                }
+
+            }
+
+            const globalInput = document.querySelector(
                 `input[name="${cfg.fieldName}"]`
-            )?.value ?? null;
+            );
+
+            return globalInput?.value ?? null;
 
         }
 

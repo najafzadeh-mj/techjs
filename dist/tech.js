@@ -453,12 +453,12 @@ var Tech = (() => {
       }
     });
     Utils.Form = Object.freeze({
-      serialize(form) {
-        return new FormData(form);
+      serialize(form2) {
+        return new FormData(form2);
       },
-      toObject(form) {
+      toObject(form2) {
         return Object.fromEntries(
-          new FormData(form).entries()
+          new FormData(form2).entries()
         );
       }
     });
@@ -479,13 +479,23 @@ var Tech = (() => {
         );
       },
       antiForgery() {
-        var _a, _b;
+        var _a;
         const cfg = Tech.Config.get("antiForgery");
-        if (!cfg.enabled)
+        if (!cfg.enabled) {
           return null;
-        return (_b = (_a = document.querySelector(
+        }
+        if (form) {
+          const input = form.querySelector(
+            `input[name="${cfg.fieldName}"]`
+          );
+          if (input) {
+            return input.value;
+          }
+        }
+        const globalInput = document.querySelector(
           `input[name="${cfg.fieldName}"]`
-        )) == null ? void 0 : _a.value) != null ? _b : null;
+        );
+        return (_a = globalInput == null ? void 0 : globalInput.value) != null ? _a : null;
       }
     });
     Utils.Async = Object.freeze({
@@ -634,11 +644,11 @@ var Tech = (() => {
         return {};
       }
     }
-    function formToObject(form) {
-      if (!form)
+    function formToObject(form2) {
+      if (!form2)
         return {};
       return Object.fromEntries(
-        new FormData(form).entries()
+        new FormData(form2).entries()
       );
     }
     function containerToObject(container) {
@@ -723,9 +733,9 @@ var Tech = (() => {
       const encoding = element.getAttribute(
         Tech.Constants.Attributes.Encoding
       );
-      const form = element.closest("form");
-      if (form && encoding !== "json") {
-        return new FormData(form);
+      const form2 = element.closest("form");
+      if (form2 && encoding !== "json") {
+        return new FormData(form2);
       }
       const data = build(element);
       if (encoding === "json") {
@@ -816,6 +826,10 @@ var Tech = (() => {
         config.headers,
         request.headers
       );
+      const token = Tech.Utils.Header.antiForgery(request.form);
+      if (token && config.antiForgery.enabled) {
+        request.headers[config.antiForgery.headerName] = token;
+      }
       return request;
     }
     function resolveUrl(request, config) {
@@ -1406,30 +1420,30 @@ var Tech = (() => {
     function hasValidator() {
       return hasJQuery() && !!jQuery.fn.validate;
     }
-    function reset(form) {
-      if (!hasValidator(form)) {
+    function reset(form2) {
+      if (!hasValidator(form2)) {
         return;
       }
-      window2.jQuery(form).validate().resetForm();
+      window2.jQuery(form2).validate().resetForm();
     }
     function hasUnobtrusive() {
       return hasJQuery() && !!jQuery.validator && !!jQuery.validator.unobtrusive;
     }
-    function parse(form) {
+    function parse(form2) {
       if (!hasUnobtrusive()) {
         return;
       }
-      jQuery.validator.unobtrusive.parse(form);
+      jQuery.validator.unobtrusive.parse(form2);
     }
-    function validate(form) {
-      if (!form) {
+    function validate(form2) {
+      if (!form2) {
         return true;
       }
       if (!hasValidator()) {
         return true;
       }
-      parse(form);
-      return jQuery(form).valid();
+      parse(form2);
+      return jQuery(form2).valid();
     }
     Tech.Validation = Object.freeze({
       validate
@@ -1905,70 +1919,70 @@ var Tech = (() => {
     window2.Tech = window2.Tech || {};
     const Tech = window2.Tech;
     Tech.Handlers = Tech.Handlers || {};
-    function isInitialized(form) {
-      return form.__techInitialized === true;
+    function isInitialized(form2) {
+      return form2.__techInitialized === true;
     }
-    function markInitialized(form) {
-      form.__techInitialized = true;
+    function markInitialized(form2) {
+      form2.__techInitialized = true;
     }
-    function getMethod(form) {
-      return (form.getAttribute(
+    function getMethod(form2) {
+      return (form2.getAttribute(
         Tech.Constants.Attributes.METHOD
-      ) || form.getAttribute("method") || Tech.Constants.Methods.GET).toUpperCase();
+      ) || form2.getAttribute("method") || Tech.Constants.Methods.GET).toUpperCase();
     }
-    function getUrl(form) {
-      return form.getAttribute(
+    function getUrl(form2) {
+      return form2.getAttribute(
         Tech.Constants.Attributes.URL
-      ) || form.getAttribute("action") || window2.location.href;
+      ) || form2.getAttribute("action") || window2.location.href;
     }
-    function getBody(form) {
-      return Tech.Utils.Form.serialize(form);
+    function getBody(form2) {
+      return Tech.Utils.Form.serialize(form2);
     }
-    function buildOptions(form) {
+    function buildOptions(form2) {
       return {
-        element: form,
-        url: getUrl(form),
-        method: getMethod(form),
-        body: getBody(form)
+        element: form2,
+        url: getUrl(form2),
+        method: getMethod(form2),
+        body: getBody(form2)
       };
     }
     async function submit(e) {
       e.preventDefault();
-      const form = e.currentTarget;
-      if (!Tech.Validation.validate(form)) {
+      const form2 = e.currentTarget;
+      if (!Tech.Validation.validate(form2)) {
         Tech.Dispatcher.dispatch(
-          form,
+          form2,
           Tech.Constants.Events.VALIDATION_ERROR,
           null
         );
         return;
       }
       await Tech.Pipeline.execute(
-        buildOptions(form)
+        buildOptions(form2)
       );
     }
-    function init(form) {
-      if (!Tech.Utils.Type.isForm(form)) {
+    function init(form2) {
+      if (!Tech.Utils.Type.isForm(form2)) {
         return;
       }
-      if (isInitialized(form)) {
+      if (isInitialized(form2)) {
         return;
       }
-      markInitialized(form);
-      form.addEventListener(
+      markInitialized(form2);
+      form2.addEventListener(
         "submit",
         submit
       );
     }
-    function destroy(form) {
-      if (!Tech.Utils.Type.isForm(form)) {
+    function destroy(form2) {
+      if (!Tech.Utils.Type.isForm(form2)) {
         return;
       }
-      form.removeEventListener(
+      form2.removeEventListener(
         "submit",
         submit
       );
-      delete form.__techInitialized;
+      delete form2.__techInitialized;
     }
     Tech.Handlers.Form = Object.freeze({
       name: "form",
@@ -2216,8 +2230,8 @@ var Tech = (() => {
       function(e) {
         Tech.Engine.refresh();
         const target = e.detail.target;
-        target.querySelectorAll("form").forEach(function(form) {
-          Tech.Validation.validate(form);
+        target.querySelectorAll("form").forEach(function(form2) {
+          Tech.Validation.validate(form2);
         });
       }
     );

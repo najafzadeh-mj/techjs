@@ -140,6 +140,19 @@
             request.headers
         );
 
+        //------------------------------------------------------
+        // Anti-forgery token
+        //------------------------------------------------------
+
+        const token = Tech.Utils.Header.antiForgery( request.form);
+
+        if (token && config.antiForgery.enabled) {
+
+            request.headers[config.antiForgery.headerName] = token;
+
+        }
+
+
         return request;
 
     }
@@ -235,7 +248,7 @@
         let requestModel = normalizeOptions(options);
         const config = Tech.Config.get();
         requestModel = mergeConfig(requestModel, config);
-        requestModel = resolveUrl(requestModel,config);
+        requestModel = resolveUrl(requestModel, config);
         return executeRequest(requestModel);
 
     }
