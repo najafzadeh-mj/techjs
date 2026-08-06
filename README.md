@@ -1,376 +1,222 @@
-# techjs
-A lightweight attribute-based Fetch/Ajax library for modern web applications
-
 # Tech.js
 
-> A lightweight attribute-based Fetch/Ajax library for modern web applications.
+**A lightweight Attribute-Based Fetch Library for ASP.NET Core MVC**
 
-Tech.js is a tiny, dependency-free JavaScript library that enables **AJAX interactions directly from HTML attributes**. It is inspired by the simplicity of HTML-first development while keeping full control in your hands.
-
-```html
-<form data-tech method="post" action="/Home/Save" data-tech-target="#result">
-    <input name="name" value="Ali">
-    <button type="submit">Save</button>
-</form>
-
-<div id="result"></div>
-```
-
-No jQuery. No framework. No boilerplate JavaScript.
+Tech.js is a small, dependency-free JavaScript library that brings AJAX interactions to ASP.NET Core MVC applications using simple HTML attributes. It is inspired by the idea of declarative UI behavior while staying minimal and framework-agnostic.
 
 ---
 
 ## Features
 
-* **Attribute-based AJAX**
-* **Zero dependencies**
-* **Vanilla JavaScript**
-* **Form, Link, Button, and Trigger handlers**
-* **Automatic FormData support**
-* **Query string generation**
-* **JSON and form-urlencoded support**
-* **Partial HTML rendering**
-* **Custom event system**
-* **Lightweight build**
-* **ASP.NET Core MVC friendly**
+* Attribute-based AJAX requests
+* Form, link, button and custom trigger handlers
+* Bootstrap confirmation modal
+* Loading indicator support
+* Partial HTML swap (`inner`, `outer`, `before`, `after`)
+* Automatic re-initialization after partial updates
+* Browser History API (`pushState` / `replaceState`)
+* ASP.NET Core unobtrusive validation integration
+* Global toast notifications
+* Server-side message extraction from JSON responses
 
 ---
 
-## Why Tech.js?
+## Installation
 
-Traditional AJAX often requires repetitive JavaScript:
-
-```javascript
-fetch('/Home/Save', {
-    method: 'POST',
-    body: new FormData(document.querySelector('#frm'))
-}).then(r => r.text())
-  .then(html => {
-      document.querySelector('#result').innerHTML = html;
-  });
-```
-
-With Tech.js, the same behaviour is expressed declaratively in HTML:
-
-```html
-<form data-tech action="/Home/Save" method="post" data-tech-target="#result">
-    ...
-</form>
-```
-
----
-
-# Installation
-
-## Download
-
-Download the latest release from GitHub and include:
-
-```html
-<script src="/lib/techjs/tech.min.js"></script>
-```
-
-## Build from source
+Clone the repository:
 
 ```bash
-git clone https://github.com/your-username/techjs.git
-cd techjs
+git clone https://github.com/najafzadeh-mj/techjs.git
+```
+
+Install dependencies:
+
+```bash
 npm install
+```
+
+Build:
+
+```bash
 npm run build
 ```
 
-Generated files:
+Include the generated file in your ASP.NET Core layout:
 
-```
-dist/
-├── tech.js
-├── tech.min.js
-└── tech.min.js.map
+```html
+<script src="/js/tech.js"></script>
 ```
 
 ---
 
-# Quick Start
+## Quick Start
 
-## ASP.NET Core MVC Example
+### AJAX Form
 
-### Controller
+```html
+<form data-tech
+      data-tech-method="POST"
+      data-tech-url="/User/Save"
+      data-tech-notify="true">
+
+    <input name="name" />
+
+    <button type="submit">
+        Save
+    </button>
+
+</form>
+```
+
+### ASP.NET Core Controller
 
 ```csharp
 [HttpPost]
-public IActionResult Save(string name)
+public IActionResult Save(UserVm model)
 {
-    return Content($"<h3>Hello {name}</h3>", "text/html");
+    return Json(new
+    {
+        success = true,
+        message = "User saved successfully"
+    });
 }
 ```
 
-### View
+When the request succeeds, Tech.js automatically shows a Bootstrap toast with the server message.
+
+---
+
+## Partial Update
 
 ```html
-<form data-tech method="post" action="/Home/Save" data-tech-target="#result">
-    <input name="name" value="Ali">
-    <button type="submit">Save</button>
+<div id="content"></div>
+
+<a data-tech
+   data-tech-url="/Products/List"
+   data-tech-target="#content"
+   data-tech-swap="inner">
+
+   Load Products
+
+</a>
+```
+
+---
+
+## Confirmation Dialog
+
+```html
+<button data-tech
+        data-tech-url="/User/Delete/5"
+        data-tech-method="POST"
+        data-tech-confirm="Are you sure?">
+
+    Delete
+
+</button>
+```
+
+If Bootstrap is available, a Bootstrap modal is used; otherwise `window.confirm()` is used as a fallback.
+
+---
+
+## Loading Indicator
+
+```html
+<form data-tech
+      data-tech-loading=".spinner">
+
+    <button type="submit">
+        Save
+        <span class="spinner d-none">Loading...</span>
+    </button>
+
 </form>
-
-<div id="result"></div>
-```
-
-Result: The page does **not refresh**, and the response is injected into `#result`.
-
----
-
-# Core Attributes
-
-| Attribute             | Description                     |
-| --------------------- | ------------------------------- |
-| `data-tech`           | Enables Tech.js behaviour       |
-| `data-tech-url`       | Request URL                     |
-| `data-tech-method`    | HTTP method                     |
-| `data-tech-target`    | Target element selector         |
-| `data-tech-swap`      | Swap strategy                   |
-| `data-tech-confirm`   | Confirmation dialog             |
-| `data-tech-trigger`   | Custom trigger event            |
-| `data-tech-data`      | Inline JSON data                |
-| `data-tech-data-form` | Include another form            |
-| `data-tech-source`    | Include inputs from a container |
-| `data-tech-encoding`  | `json` or default form encoding |
-
----
-
-# Handlers
-
-## Form Handler
-
-```html
-<form data-tech action="/Save" method="post" data-tech-target="#result">
-    ...
-</form>
-```
-
-## Link Handler
-
-```html
-<a data-tech href="/Products/List" data-tech-target="#result">
-    Load products
-</a>
-```
-
-## Button Handler
-
-```html
-<button
-    data-tech
-    data-tech-url="/Save"
-    data-tech-method="post"
-    data-tech-target="#result">
-    Save
-</button>
-```
-
-## Trigger Handler
-
-```html
-<input
-    data-tech-trigger="keyup"
-    data-tech-url="/Search"
-    data-tech-target="#result">
 ```
 
 ---
 
-# Data System
-
-## Inline JSON
+## Browser History
 
 ```html
-<button
-    data-tech
-    data-tech-url="/Save"
-    data-tech-method="post"
-    data-tech-data='{"mode":"draft"}'>
-</button>
-```
+<a data-tech
+   data-tech-url="/Products?page=2"
+   data-tech-target="#content"
+   data-tech-push-url="true">
 
-## Include another form
+   Next Page
 
-```html
-<a
-    data-tech
-    href="/Search"
-    data-tech-data-form="#filterForm">
-</a>
-```
-
-## Include a container
-
-```html
-<button
-    data-tech
-    data-tech-url="/Save"
-    data-tech-source="#card">
-</button>
-```
-
----
-
-# Swap Modes
-
-| Value         | Behaviour                   |
-| ------------- | --------------------------- |
-| `inner`       | Replace innerHTML (default) |
-| `outer`       | Replace element             |
-| `beforebegin` | Insert before element       |
-| `afterbegin`  | Insert at beginning         |
-| `beforeend`   | Insert at end               |
-| `afterend`    | Insert after element        |
-
-Example:
-
-```html
-<div id="result"></div>
-
-<a
-    data-tech
-    href="/Items"
-    data-tech-target="#result"
-    data-tech-swap="beforeend">
-    Append items
 </a>
 ```
 
 ---
 
-# Events
+## Validation Integration
 
-Tech.js dispatches custom DOM events.
+Tech.js automatically works with **jQuery Validate** and **jQuery Unobtrusive Validation** if they are loaded on the page. Invalid forms are not submitted via AJAX.
+
+---
+
+## Notification Modes
+
+```html
+data-tech-notify="true"      // success and error
+data-tech-notify="success"   // success only
+data-tech-notify="error"     // error only
+```
+
+---
+
+## API
+
+### Manual Notifications
 
 ```javascript
-document.addEventListener('tech:success', function (e) {
-    console.log('Request completed', e.detail);
+Tech.Notify.success("Saved");
+Tech.Notify.error("Delete failed");
+Tech.Notify.warning("Check your input");
+Tech.Notify.info("Done");
+```
+
+### Events
+
+```javascript
+document.addEventListener("tech:success", function (e) {
+    console.log(e.detail);
 });
 ```
 
 Available events:
 
 * `tech:before`
-* `tech:loadingStart`
 * `tech:success`
 * `tech:error`
-* `tech:loadingEnd`
 * `tech:complete`
+* `tech:loadingStart`
+* `tech:loadingEnd`
+* `tech:partialLoaded`
 
 ---
 
-# Configuration
+## Requirements
 
-```javascript
-Tech.Config.set('baseUrl', '/api');
-Tech.Config.set('timeout', 10000);
-Tech.Config.set('debug', true);
-```
-
-Read configuration:
-
-```javascript
-const timeout = Tech.Config.get('timeout');
-```
+* Modern browser with Fetch API support
+* ASP.NET Core MVC (recommended)
+* Bootstrap 5 (optional, for modal and toast UI)
+* jQuery Validate + Unobtrusive Validation (optional)
 
 ---
 
-# Browser Support
+## Project Status
 
-Tech.js targets modern browsers supporting:
+Current milestone: **v1.0.0-beta**
 
-* Fetch API
-* FormData
-* URLSearchParams
-* CustomEvent
-* ES2018+
+Tech.js is actively evolving toward a stable v1 release focused on ASP.NET Core MVC applications.
 
 ---
 
-# Project Structure
+## License
 
-```
-src/
-├── core/
-├── network/
-├── engine/
-├── handlers/
-└── tech.bootstrap.js
-```
+MIT License
 
----
-
-# Build
-
-```bash
-npm run build
-```
-
-Watch mode:
-
-```bash
-npm run watch
-```
-
----
-
-# Roadmap
-
-## Version 1.0
-
-* [x] Form handler
-* [x] Link handler
-* [x] Button handler
-* [x] Trigger handler
-* [x] Request pipeline
-* [x] Response swap
-* [x] Event system
-* [x] Build system
-
-## Version 1.1
-
-* [ ] Debounced triggers (`keyup:500`)
-* [ ] Polling
-* [ ] IntersectionObserver triggers
-* [ ] Middleware API
-* [ ] Plugin system
-* [ ] TypeScript definitions
-
----
-
-# Contributing
-
-Contributions are welcome.
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Open a Pull Request
-
-Please keep the library lightweight and framework-independent.
-
----
-
-# License
-
-This project is licensed under the **MIT License**.
-
-See [LICENSE](LICENSE) for details.
-
----
-
-# Acknowledgements
-
-Tech.js is inspired by the idea that **HTML should remain expressive and interactive without requiring heavy front-end frameworks**.
-
----
-
-# Maintainers
-
-Created and maintained by **Majid Najafzadeh** with the help of **OpenAI ChatGPT**.
-
----
-
-If Tech.js helps your project, please consider giving it a **⭐ star on GitHub**.
+Copyright (c) 2026
