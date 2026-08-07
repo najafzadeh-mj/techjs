@@ -174,6 +174,8 @@
 
             SOURCE: "data-tech-source",
 
+            BEGIN: "data-tech-begin",
+
             SUCCESS: "data-tech-success",
 
             ERROR: "data-tech-error",
@@ -183,6 +185,7 @@
             NOTIFY: "data-tech-notify",
 
             EXECUTE_SCRIPTS: "data-tech-execute-scripts",
+
 
         }),
 

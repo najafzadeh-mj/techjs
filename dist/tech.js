@@ -325,6 +325,7 @@ var Tech = (() => {
         DATA: "data-tech-data",
         DATAFORM: "data-tech-data-form",
         SOURCE: "data-tech-source",
+        BEGIN: "data-tech-begin",
         SUCCESS: "data-tech-success",
         ERROR: "data-tech-error",
         COMPLETE: "data-tech-complete",
@@ -1676,6 +1677,80 @@ var Tech = (() => {
     });
   })(window);
 
+  // src/engine/tech.callbacks.js
+  (function(window2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    function getFunction(name) {
+      if (!name) {
+        return null;
+      }
+      const fn = window2[name];
+      return typeof fn === "function" ? fn : null;
+    }
+    function invoke(name, context) {
+      const fn = getFunction(name);
+      if (!fn) {
+        return;
+      }
+      try {
+        return fn(context);
+      } catch (ex) {
+        console.error(
+          "Tech callback error:",
+          name,
+          ex
+        );
+      }
+    }
+    function read(element, attribute) {
+      return element.getAttribute(attribute);
+    }
+    function begin(element, context) {
+      return invoke(
+        read(
+          element,
+          Tech.Constants.Attributes.BEGIN
+        ),
+        context
+      );
+    }
+    function success(element, context) {
+      return invoke(
+        read(
+          element,
+          Tech.Constants.Attributes.SUCCESS
+        ),
+        context
+      );
+    }
+    function error(element, context) {
+      return invoke(
+        read(
+          element,
+          Tech.Constants.Attributes.ERROR
+        ),
+        context
+      );
+    }
+    function complete(element, context) {
+      return invoke(
+        read(
+          element,
+          Tech.Constants.Attributes.COMPLETE
+        ),
+        context
+      );
+    }
+    Tech.Callbacks = Object.freeze({
+      begin,
+      success,
+      error,
+      complete
+    });
+  })(window);
+
   // src/engine/tech.pipeline.js
   (function(window2) {
     "use strict";
@@ -1714,31 +1789,62 @@ var Tech = (() => {
       );
     }
     function before(element, options) {
+      const context = {
+        element,
+        options
+      };
       dispatch(
         element,
         Tech.Constants.Events.BEFORE,
-        options
+        context
+      );
+      return Tech.Callbacks.begin(
+        element,
+        context
       );
     }
     function success(element, response) {
+      const context = {
+        element,
+        response
+      };
       dispatch(
         element,
         Tech.Constants.Events.SUCCESS,
-        response
+        context
+      );
+      Tech.Callbacks.success(
+        element,
+        context
       );
     }
     function error(element, ex) {
+      const context = {
+        element,
+        error: ex
+      };
       dispatch(
         element,
         Tech.Constants.Events.ERROR,
-        ex
+        context
+      );
+      Tech.Callbacks.error(
+        element,
+        context
       );
     }
     function complete(element) {
+      const context = {
+        element
+      };
       dispatch(
         element,
         Tech.Constants.Events.COMPLETE,
-        null
+        context
+      );
+      Tech.Callbacks.complete(
+        element,
+        context
       );
     }
     function readConfirm(element) {
@@ -1781,7 +1887,10 @@ var Tech = (() => {
       if (!await checkConfirm(element)) {
         return null;
       }
-      before(element, options);
+      const beginResult = before(element, options);
+      if (beginResult === false) {
+        return null;
+      }
       showLoading(element);
       try {
         const response = await executeRequest(options);
@@ -2410,6 +2519,12 @@ var Tech = (() => {
  * ----------------------------------------------------------------------------
  * Tech.js
  * tech.notify.js
+ * ----------------------------------------------------------------------------
+ */
+/*!
+ * ----------------------------------------------------------------------------
+ * Tech.js
+ * tech.callbacks.js
  * ----------------------------------------------------------------------------
  */
 /*!

@@ -78,40 +78,87 @@
 
     function before(element, options) {
 
+        const context = {
+            element,
+            options
+        };
+
+        //------------------------------------------------------
+        // DOM event
+        //------------------------------------------------------
+
         dispatch(
             element,
             Tech.Constants.Events.BEFORE,
-            options
+            context
+        );
+
+        //------------------------------------------------------
+        // Attribute callback
+        //------------------------------------------------------
+
+        return Tech.Callbacks.begin(
+            element,
+            context
         );
 
     }
 
     function success(element, response) {
 
+        const context = {
+            element,
+            response
+        };
+
         dispatch(
             element,
             Tech.Constants.Events.SUCCESS,
-            response
+            context
+        );
+
+        Tech.Callbacks.success(
+            element,
+            context
         );
 
     }
 
     function error(element, ex) {
 
+        const context = {
+            element,
+            error: ex
+        };
+
         dispatch(
             element,
             Tech.Constants.Events.ERROR,
-            ex
+            context
+        );
+
+        Tech.Callbacks.error(
+            element,
+            context
         );
 
     }
 
     function complete(element) {
 
+        const context = {
+            element
+        };
+
         dispatch(
             element,
             Tech.Constants.Events.COMPLETE,
-            null
+            context
+        );
+
+        Tech.Callbacks.complete(
+            element,
+            context
         );
 
     }
@@ -191,7 +238,11 @@
             return null;
         }
 
-        before(element, options);
+        const beginResult = before(element, options);
+
+        if (beginResult === false) {
+            return null;
+        }
 
         showLoading(element);
 
