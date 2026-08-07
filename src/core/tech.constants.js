@@ -182,6 +182,8 @@
 
             NOTIFY: "data-tech-notify",
 
+            EXECUTE_SCRIPTS: "data-tech-execute-scripts",
+
         }),
 
         //----------------------------------------------------------

@@ -5,6 +5,7 @@ import './core/tech.events.js';
 import './core/tech.data.js';
 
 import './network/tech.request.js';
+import './engine/tech.scripts.js';
 import './network/tech.response.js';
 
 import './engine/tech.dispatcher.js';

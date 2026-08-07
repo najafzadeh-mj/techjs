@@ -229,7 +229,7 @@
 
         },
 
-        antiForgery() {
+        antiForgery(form) {
 
             const cfg =
                 Tech.Config.get('antiForgery');
@@ -237,6 +237,10 @@
             if (!cfg.enabled) {
                 return null;
             }
+
+            //------------------------------------------------------
+            // Try form first
+            //------------------------------------------------------
 
             if (form) {
 
@@ -250,13 +254,20 @@
 
             }
 
+            //------------------------------------------------------
+            // Fallback: search whole document
+            //------------------------------------------------------
+
             const globalInput = document.querySelector(
                 `input[name="${cfg.fieldName}"]`
             );
 
-            return globalInput?.value ?? null;
-
+            return globalInput
+                ? globalInput.value
+                : null;
         }
+
+
 
     });
 

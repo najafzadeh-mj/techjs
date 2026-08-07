@@ -328,7 +328,8 @@ var Tech = (() => {
         SUCCESS: "data-tech-success",
         ERROR: "data-tech-error",
         COMPLETE: "data-tech-complete",
-        NOTIFY: "data-tech-notify"
+        NOTIFY: "data-tech-notify",
+        EXECUTE_SCRIPTS: "data-tech-execute-scripts"
       }),
       //----------------------------------------------------------
       // Swap Mode
@@ -453,12 +454,12 @@ var Tech = (() => {
       }
     });
     Utils.Form = Object.freeze({
-      serialize(form2) {
-        return new FormData(form2);
+      serialize(form) {
+        return new FormData(form);
       },
-      toObject(form2) {
+      toObject(form) {
         return Object.fromEntries(
-          new FormData(form2).entries()
+          new FormData(form).entries()
         );
       }
     });
@@ -478,8 +479,7 @@ var Tech = (() => {
           ...headers.filter(Boolean)
         );
       },
-      antiForgery() {
-        var _a;
+      antiForgery(form) {
         const cfg = Tech.Config.get("antiForgery");
         if (!cfg.enabled) {
           return null;
@@ -495,7 +495,7 @@ var Tech = (() => {
         const globalInput = document.querySelector(
           `input[name="${cfg.fieldName}"]`
         );
-        return (_a = globalInput == null ? void 0 : globalInput.value) != null ? _a : null;
+        return globalInput ? globalInput.value : null;
       }
     });
     Utils.Async = Object.freeze({
@@ -644,11 +644,11 @@ var Tech = (() => {
         return {};
       }
     }
-    function formToObject(form2) {
-      if (!form2)
+    function formToObject(form) {
+      if (!form)
         return {};
       return Object.fromEntries(
-        new FormData(form2).entries()
+        new FormData(form).entries()
       );
     }
     function containerToObject(container) {
@@ -733,9 +733,9 @@ var Tech = (() => {
       const encoding = element.getAttribute(
         Tech.Constants.Attributes.Encoding
       );
-      const form2 = element.closest("form");
-      if (form2 && encoding !== "json") {
-        return new FormData(form2);
+      const form = element.closest("form");
+      if (form && encoding !== "json") {
+        return new FormData(form);
       }
       const data = build(element);
       if (encoding === "json") {
@@ -888,6 +888,51 @@ var Tech = (() => {
     });
   })(window);
 
+  // src/engine/tech.scripts.js
+  (function(window2, document2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    function shouldExecute(element) {
+      return element.getAttribute(
+        Tech.Constants.Attributes.EXECUTE_SCRIPTS
+      ) === "true";
+    }
+    function cloneAttributes(from, to) {
+      Array.from(from.attributes).forEach(function(attr) {
+        to.setAttribute(
+          attr.name,
+          attr.value
+        );
+      });
+    }
+    function executeScript(oldScript) {
+      const script = document2.createElement("script");
+      cloneAttributes(oldScript, script);
+      script.textContent = oldScript.textContent;
+      oldScript.parentNode.replaceChild(
+        script,
+        oldScript
+      );
+    }
+    function executeScripts(container) {
+      if (!container) {
+        return;
+      }
+      const scripts = container.querySelectorAll("script");
+      scripts.forEach(executeScript);
+    }
+    function run(target, sourceElement) {
+      if (!shouldExecute(sourceElement)) {
+        return;
+      }
+      executeScripts(target);
+    }
+    Tech.Scripts = Object.freeze({
+      run
+    });
+  })(window, document);
+
   // src/network/tech.response.js
   (function(window2) {
     "use strict";
@@ -1006,11 +1051,8 @@ var Tech = (() => {
       const mode = element.getAttribute(
         Tech.Constants.Attributes.SWAP
       ) || Tech.Constants.Swap.InnerHtml;
-      swap(
-        target,
-        result.data,
-        mode
-      );
+      swap(target, result.data, mode);
+      Tech.Scripts.run(target, element);
       Tech.Dispatcher.dispatch(
         target,
         Tech.Constants.Events.PARTIAL_LOADED,
@@ -1420,30 +1462,30 @@ var Tech = (() => {
     function hasValidator() {
       return hasJQuery() && !!jQuery.fn.validate;
     }
-    function reset(form2) {
-      if (!hasValidator(form2)) {
+    function reset(form) {
+      if (!hasValidator(form)) {
         return;
       }
-      window2.jQuery(form2).validate().resetForm();
+      window2.jQuery(form).validate().resetForm();
     }
     function hasUnobtrusive() {
       return hasJQuery() && !!jQuery.validator && !!jQuery.validator.unobtrusive;
     }
-    function parse(form2) {
+    function parse(form) {
       if (!hasUnobtrusive()) {
         return;
       }
-      jQuery.validator.unobtrusive.parse(form2);
+      jQuery.validator.unobtrusive.parse(form);
     }
-    function validate(form2) {
-      if (!form2) {
+    function validate(form) {
+      if (!form) {
         return true;
       }
       if (!hasValidator()) {
         return true;
       }
-      parse(form2);
-      return jQuery(form2).valid();
+      parse(form);
+      return jQuery(form).valid();
     }
     Tech.Validation = Object.freeze({
       validate
@@ -1919,70 +1961,71 @@ var Tech = (() => {
     window2.Tech = window2.Tech || {};
     const Tech = window2.Tech;
     Tech.Handlers = Tech.Handlers || {};
-    function isInitialized(form2) {
-      return form2.__techInitialized === true;
+    function isInitialized(form) {
+      return form.__techInitialized === true;
     }
-    function markInitialized(form2) {
-      form2.__techInitialized = true;
+    function markInitialized(form) {
+      form.__techInitialized = true;
     }
-    function getMethod(form2) {
-      return (form2.getAttribute(
+    function getMethod(form) {
+      return (form.getAttribute(
         Tech.Constants.Attributes.METHOD
-      ) || form2.getAttribute("method") || Tech.Constants.Methods.GET).toUpperCase();
+      ) || form.getAttribute("method") || Tech.Constants.Methods.GET).toUpperCase();
     }
-    function getUrl(form2) {
-      return form2.getAttribute(
+    function getUrl(form) {
+      return form.getAttribute(
         Tech.Constants.Attributes.URL
-      ) || form2.getAttribute("action") || window2.location.href;
+      ) || form.getAttribute("action") || window2.location.href;
     }
-    function getBody(form2) {
-      return Tech.Utils.Form.serialize(form2);
+    function getBody(form) {
+      return Tech.Utils.Form.serialize(form);
     }
-    function buildOptions(form2) {
+    function buildOptions(form) {
       return {
-        element: form2,
-        url: getUrl(form2),
-        method: getMethod(form2),
-        body: getBody(form2)
+        element: form,
+        form,
+        url: getUrl(form),
+        method: getMethod(form),
+        body: getBody(form)
       };
     }
     async function submit(e) {
       e.preventDefault();
-      const form2 = e.currentTarget;
-      if (!Tech.Validation.validate(form2)) {
+      const form = e.currentTarget;
+      if (!Tech.Validation.validate(form)) {
         Tech.Dispatcher.dispatch(
-          form2,
+          form,
           Tech.Constants.Events.VALIDATION_ERROR,
           null
         );
         return;
       }
       await Tech.Pipeline.execute(
-        buildOptions(form2)
+        buildOptions(form)
       );
     }
-    function init(form2) {
-      if (!Tech.Utils.Type.isForm(form2)) {
+    function init(form) {
+      if (!Tech.Utils.Type.isForm(form)) {
         return;
       }
-      if (isInitialized(form2)) {
+      if (isInitialized(form)) {
         return;
       }
-      markInitialized(form2);
-      form2.addEventListener(
+      markInitialized(form);
+      form.addEventListener(
         "submit",
         submit
       );
     }
-    function destroy(form2) {
-      if (!Tech.Utils.Type.isForm(form2)) {
+    function destroy(form) {
+      if (!Tech.Utils.Type.isForm(form)) {
         return;
       }
-      form2.removeEventListener(
+      form.removeEventListener(
         "submit",
         submit
       );
-      delete form2.__techInitialized;
+      delete form.__techInitialized;
     }
     Tech.Handlers.Form = Object.freeze({
       name: "form",
@@ -2230,8 +2273,8 @@ var Tech = (() => {
       function(e) {
         Tech.Engine.refresh();
         const target = e.detail.target;
-        target.querySelectorAll("form").forEach(function(form2) {
-          Tech.Validation.validate(form2);
+        target.querySelectorAll("form").forEach(function(form) {
+          Tech.Validation.validate(form);
         });
       }
     );
@@ -2292,6 +2335,12 @@ var Tech = (() => {
 * Version : 1.0.0
 * ----------------------------------------------------------------------------
 */
+/*!
+ * ----------------------------------------------------------------------------
+ * Tech.js
+ * tech.scripts.js
+ * ----------------------------------------------------------------------------
+ */
 /*!
 * ----------------------------------------------------------------------------
 * Tech.js

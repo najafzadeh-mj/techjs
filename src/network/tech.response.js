@@ -315,15 +315,14 @@
         // DOM Swap
         //------------------------------------------------------
 
-        swap(
+        swap(target, result.data, mode);
 
-            target,
 
-            result.data,
+        //------------------------------------------------------
+        // Execute scripts inside swapped content
+        //------------------------------------------------------
 
-            mode
-
-        );
+        Tech.Scripts.run(target, element);
 
         //------------------------------------------------------
         // NEW: notify after swap
@@ -338,7 +337,7 @@
                 mode: mode
             }
         );
-        
+
         return result;
 
     }

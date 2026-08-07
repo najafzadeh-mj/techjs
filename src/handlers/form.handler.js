@@ -84,11 +84,14 @@
 
     }
 
+
     function buildOptions(form) {
 
         return {
 
             element: form,
+
+            form: form,
 
             url: getUrl(form),
 
