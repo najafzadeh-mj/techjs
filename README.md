@@ -1,222 +1,206 @@
 # Tech.js
 
-**A lightweight Attribute-Based Fetch Library for ASP.NET Core MVC**
+## Lightweight Attribute-Based Fetch Library
 
-Tech.js is a small, dependency-free JavaScript library that brings AJAX interactions to ASP.NET Core MVC applications using simple HTML attributes. It is inspired by the idea of declarative UI behavior while staying minimal and framework-agnostic.
+Tech.js is a lightweight JavaScript library for building AJAX-powered applications using HTML attributes.
 
----
-
-## Features
-
-* Attribute-based AJAX requests
-* Form, link, button and custom trigger handlers
-* Bootstrap confirmation modal
-* Loading indicator support
-* Partial HTML swap (`inner`, `outer`, `before`, `after`)
-* Automatic re-initialization after partial updates
-* Browser History API (`pushState` / `replaceState`)
-* ASP.NET Core unobtrusive validation integration
-* Global toast notifications
-* Server-side message extraction from JSON responses
+Designed especially for **ASP.NET Core MVC**, Tech.js removes repetitive JavaScript request code and provides a clean declarative approach.
 
 ---
 
-## Installation
+## Why Tech.js?
 
-Clone the repository:
+Traditional AJAX code usually requires:
 
-```bash
-git clone https://github.com/najafzadeh-mj/techjs.git
+* Writing JavaScript for every request
+* Managing loading states manually
+* Handling errors repeatedly
+* Updating DOM manually
+
+Tech.js changes this approach.
+
+Instead of:
+
+```javascript
+fetch("/Home/Test", {
+    method: "POST"
+})
+.then(...)
 ```
 
-Install dependencies:
-
-```bash
-npm install
-```
-
-Build:
-
-```bash
-npm run build
-```
-
-Include the generated file in your ASP.NET Core layout:
+You write:
 
 ```html
-<script src="/js/tech.js"></script>
+<form 
+    data-tech="form"
+    data-tech-url="/Home/Test"
+    data-tech-method="POST">
+</form>
 ```
+
+Tech.js manages the request lifecycle.
 
 ---
 
-## Quick Start
+# Features
 
-### AJAX Form
+* Attribute-Based API
+* Fetch API powered
+* Modular architecture
+* Request pipeline
+* Event-driven lifecycle
+* Loading management
+* Confirmation dialogs
+* DOM swap support
+* ASP.NET Core MVC friendly
+
+---
+
+# Quick Example
 
 ```html
-<form data-tech
-      data-tech-method="POST"
-      data-tech-url="/User/Save"
-      data-tech-notify="true">
+<form
+    data-tech="form"
+    data-tech-url="/User/Create"
+    data-tech-method="POST"
+    data-tech-target="#result">
 
-    <input name="name" />
+    <input name="username">
 
     <button type="submit">
         Save
     </button>
 
 </form>
+
+<div id="result"></div>
 ```
 
-### ASP.NET Core Controller
-
-```csharp
-[HttpPost]
-public IActionResult Save(UserVm model)
-{
-    return Json(new
-    {
-        success = true,
-        message = "User saved successfully"
-    });
-}
-```
-
-When the request succeeds, Tech.js automatically shows a Bootstrap toast with the server message.
+No custom JavaScript required.
 
 ---
 
-## Partial Update
+# Architecture
+
+Tech.js uses an Engine-Based architecture:
+
+```
+Bootstrap
+    |
+Scanner
+    |
+Registry
+    |
+Engine
+    |
+Pipeline
+    |
+Request
+    |
+Response
+```
+
+Each feature is isolated and extendable.
+
+---
+
+# Installation
+
+Add Tech.js:
 
 ```html
-<div id="content"></div>
-
-<a data-tech
-   data-tech-url="/Products/List"
-   data-tech-target="#content"
-   data-tech-swap="inner">
-
-   Load Products
-
-</a>
+<script src="tech.js"></script>
 ```
 
----
-
-## Confirmation Dialog
-
-```html
-<button data-tech
-        data-tech-url="/User/Delete/5"
-        data-tech-method="POST"
-        data-tech-confirm="Are you sure?">
-
-    Delete
-
-</button>
-```
-
-If Bootstrap is available, a Bootstrap modal is used; otherwise `window.confirm()` is used as a fallback.
-
----
-
-## Loading Indicator
-
-```html
-<form data-tech
-      data-tech-loading=".spinner">
-
-    <button type="submit">
-        Save
-        <span class="spinner d-none">Loading...</span>
-    </button>
-
-</form>
-```
-
----
-
-## Browser History
-
-```html
-<a data-tech
-   data-tech-url="/Products?page=2"
-   data-tech-target="#content"
-   data-tech-push-url="true">
-
-   Next Page
-
-</a>
-```
-
----
-
-## Validation Integration
-
-Tech.js automatically works with **jQuery Validate** and **jQuery Unobtrusive Validation** if they are loaded on the page. Invalid forms are not submitted via AJAX.
-
----
-
-## Notification Modes
-
-```html
-data-tech-notify="true"      // success and error
-data-tech-notify="success"   // success only
-data-tech-notify="error"     // error only
-```
-
----
-
-## API
-
-### Manual Notifications
+Initialize:
 
 ```javascript
-Tech.Notify.success("Saved");
-Tech.Notify.error("Delete failed");
-Tech.Notify.warning("Check your input");
-Tech.Notify.info("Done");
+Tech.bootstrap();
 ```
 
-### Events
+---
 
-```javascript
-document.addEventListener("tech:success", function (e) {
-    console.log(e.detail);
-});
+# Documentation
+
+Complete documentation:
+
+📚 [Documentation](docs/index.md)
+
+---
+
+# Current Version
+
+Version: **1.0.0**
+
+Tech.js version 1 focuses on:
+
+* Stability
+* Simple API
+* Clean architecture
+* Production readiness
+
+---
+
+# Supported Attributes
+
+| Attribute         | Purpose              |
+| ----------------- | -------------------- |
+| data-tech         | Select handler       |
+| data-tech-url     | Request URL          |
+| data-tech-method  | HTTP method          |
+| data-tech-target  | DOM target           |
+| data-tech-swap    | Replace strategy     |
+| data-tech-loading | Loading element      |
+| data-tech-confirm | Confirmation message |
+
+---
+
+# Events
+
+Tech.js exposes lifecycle events:
+
+```
+tech:before
+tech:loadingStart
+tech:loadingEnd
+tech:success
+tech:error
+tech:complete
 ```
 
-Available events:
+---
 
-* `tech:before`
-* `tech:success`
-* `tech:error`
-* `tech:complete`
-* `tech:loadingStart`
-* `tech:loadingEnd`
-* `tech:partialLoaded`
+# Supported Handlers
+
+| Handler | Usage           |
+| ------- | --------------- |
+| form    | AJAX forms      |
+| link    | AJAX links      |
+| button  | AJAX buttons    |
+| trigger | Custom requests |
 
 ---
 
-## Requirements
+# Project Status
 
-* Modern browser with Fetch API support
-* ASP.NET Core MVC (recommended)
-* Bootstrap 5 (optional, for modal and toast UI)
-* jQuery Validate + Unobtrusive Validation (optional)
+Tech.js is currently in active development.
 
----
-
-## Project Status
-
-Current milestone: **v1.0.0-beta**
-
-Tech.js is actively evolving toward a stable v1 release focused on ASP.NET Core MVC applications.
+The first release focuses on a reliable core engine before adding advanced features.
 
 ---
 
-## License
+# Contributing
+
+Pull requests are welcome.
+
+Please keep contributions aligned with:
+
+* Lightweight design
+* Modular architecture
+* Backward compatibility
+
+---
+
+# License
 
 MIT License
-
-Copyright (c) 2026
