@@ -186,6 +186,8 @@
 
             EXECUTE_SCRIPTS: "data-tech-execute-scripts",
 
+            ERROR_TARGET: "data-tech-error-target",
+
 
         }),
 

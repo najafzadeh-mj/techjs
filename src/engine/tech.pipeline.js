@@ -234,6 +234,13 @@
 
         const element = options.element;
 
+        //------------------------------------------------------
+        // Clear previous error target
+        //------------------------------------------------------
+
+        Tech.ErrorTarget.clear(element);
+
+
         if (! await checkConfirm(element)) {
             return null;
         }
@@ -274,6 +281,12 @@
 
         }
         catch (ex) {
+
+            //------------------------------------------------------
+            // Render error target if configured
+            //------------------------------------------------------
+
+            Tech.ErrorTarget.show(element, ex);
 
             error(
                 element,

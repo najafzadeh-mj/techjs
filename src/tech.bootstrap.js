@@ -122,6 +122,22 @@
 
             const element = e.target;
 
+            //------------------------------------------------------
+            // If error target is configured, do not show toast
+            //------------------------------------------------------
+
+            if (
+                element.hasAttribute(
+                    Tech.Constants.Attributes.ERROR_TARGET
+                )
+            ) {
+                return;
+            }
+
+            //------------------------------------------------------
+            // Notification policy
+            //------------------------------------------------------
+
             if (!Tech.NotificationPolicy.allow(element, "error")) {
                 return;
             }

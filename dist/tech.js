@@ -330,7 +330,8 @@ var Tech = (() => {
         ERROR: "data-tech-error",
         COMPLETE: "data-tech-complete",
         NOTIFY: "data-tech-notify",
-        EXECUTE_SCRIPTS: "data-tech-execute-scripts"
+        EXECUTE_SCRIPTS: "data-tech-execute-scripts",
+        ERROR_TARGET: "data-tech-error-target"
       }),
       //----------------------------------------------------------
       // Swap Mode
@@ -1751,6 +1752,58 @@ var Tech = (() => {
     });
   })(window);
 
+  // src/engine/tech.error.target.js
+  (function(window2, document2) {
+    "use strict";
+    window2.Tech = window2.Tech || {};
+    const Tech = window2.Tech;
+    function findTarget(element) {
+      const selector = element.getAttribute(
+        Tech.Constants.Attributes.ERROR_TARGET
+      );
+      if (!selector) {
+        return null;
+      }
+      return document2.querySelector(selector);
+    }
+    function extractMessage(error) {
+      if (!error) {
+        return "An unexpected error occurred.";
+      }
+      if (error.data && typeof error.data.message === "string") {
+        return error.data.message;
+      }
+      if (error.data && typeof error.data.Message === "string") {
+        return error.data.Message;
+      }
+      if (typeof error.data === "string") {
+        return error.data;
+      }
+      return "An unexpected error occurred.";
+    }
+    function show(element, error) {
+      const target = findTarget(element);
+      if (!target) {
+        return false;
+      }
+      target.innerHTML = extractMessage(error);
+      target.classList.remove("d-none");
+      return true;
+    }
+    function clear(element) {
+      const target = findTarget(element);
+      if (!target) {
+        return;
+      }
+      target.innerHTML = "";
+      target.classList.add("d-none");
+    }
+    Tech.ErrorTarget = Object.freeze({
+      show,
+      clear
+    });
+  })(window, document);
+
   // src/engine/tech.pipeline.js
   (function(window2) {
     "use strict";
@@ -1884,6 +1937,7 @@ var Tech = (() => {
     async function execute(options) {
       validate(options);
       const element = options.element;
+      Tech.ErrorTarget.clear(element);
       if (!await checkConfirm(element)) {
         return null;
       }
@@ -1908,6 +1962,7 @@ var Tech = (() => {
         );
         return response;
       } catch (ex) {
+        Tech.ErrorTarget.show(element, ex);
         error(
           element,
           ex
@@ -2360,6 +2415,11 @@ var Tech = (() => {
       Tech.Constants.Events.ERROR,
       function(e) {
         const element = e.target;
+        if (element.hasAttribute(
+          Tech.Constants.Attributes.ERROR_TARGET
+        )) {
+          return;
+        }
         if (!Tech.NotificationPolicy.allow(element, "error")) {
           return;
         }
@@ -2525,6 +2585,12 @@ var Tech = (() => {
  * ----------------------------------------------------------------------------
  * Tech.js
  * tech.callbacks.js
+ * ----------------------------------------------------------------------------
+ */
+/*!
+ * ----------------------------------------------------------------------------
+ * Tech.js
+ * tech.error.target.js
  * ----------------------------------------------------------------------------
  */
 /*!
