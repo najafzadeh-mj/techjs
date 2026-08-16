@@ -1,0 +1,66 @@
+﻿@model IReadOnlyList<TechJs.MVC.Sample.Models.Product>
+
+<table class="table table-hover mb-0">
+
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Price</th>
+            <th>Description</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+        @foreach (var product in Model)
+        {
+            <tr>
+                <td>
+                    @product.Id
+                </td>
+
+                <td>
+                    @product.Name
+                </td>
+
+                <td>
+                    @product.Price.ToString("N2")
+                </td>
+
+                <td>
+                    @product.Description
+                </td>
+
+                <td>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-danger"
+                            data-tech="button"
+                            data-tech-url="/Products/Delete"
+                            data-tech-method="POST"
+                            data-tech-data='{"id": @product.Id}'
+                            data-tech-confirm='Are you sure you want to delete @product.Name product?'
+                            data-tech-complete="productDeleted">
+                        Delete
+                    </button>
+
+                    <button type="button"
+                            class="btn btn-sm btn-outline-info"
+                            data-tech="button"
+                            data-tech-url="/Products/Edit"
+                            data-tech-method="GET"
+                            data-tech-data-id=@product.Id
+                            data-tech-target="#product-form"
+                            data-tech-complete="showProductFormModal"
+                            data-tech-swap="inner">
+                        Edit
+                    </button>
+
+                </td>
+            </tr>
+        }
+
+    </tbody>
+
+</table>

@@ -40,6 +40,54 @@
 
     }
 
+    function attributeData(element) {
+
+        if (!element)
+            return {};
+
+        const result = {};
+
+        Array.from(element.attributes)
+            .forEach(function (attribute) {
+
+                if (!attribute.name.startsWith("data-tech-data-"))
+                    return;
+
+                const key =
+                    toCamelCase(
+                        attribute.name.substring(prefix.length)
+                    );
+
+                if (!key)
+                    return;
+
+                result[key] = attribute.value;
+            });
+
+        return result;
+    }
+
+    function parseAttributeValue(value) {
+
+        if (value === "true")
+            return true;
+
+        if (value === "false")
+            return false;
+
+        if (value === "null")
+            return null;
+
+        if (
+            value !== "" &&
+            !isNaN(value)
+        ) {
+            return Number(value);
+        }
+
+        return value;
+    }
+
     function formToObject(form) {
 
         if (!form)
@@ -110,19 +158,24 @@
     function build(element) {
 
         //------------------------------------------------------
-        // 1- Json
+        // 1- JSON Data
         //------------------------------------------------------
 
         const json = parseJson(
-
             element.getAttribute(
                 Tech.Constants.Attributes.DATA
             )
-
         );
 
         //------------------------------------------------------
-        // 2- Parent Form
+        // 2- Attribute Data
+        //------------------------------------------------------
+
+        const attributeData =
+            getAttributeData(element);
+
+        //------------------------------------------------------
+        // 3- Parent Form
         //------------------------------------------------------
 
         let formData = {};
@@ -134,11 +187,10 @@
 
             formData =
                 formToObject(parentForm);
-
         }
 
         //------------------------------------------------------
-        // 3- External Form
+        // 4- External Form
         //------------------------------------------------------
 
         const formSelector =
@@ -149,23 +201,17 @@
         if (formSelector) {
 
             formData = merge(
-
                 formData,
-
                 formToObject(
-
                     document.querySelector(
                         formSelector
                     )
-
                 )
-
             );
-
         }
 
         //------------------------------------------------------
-        // 4- Source Container
+        // 5- Source Container
         //------------------------------------------------------
 
         let sourceData = {};
@@ -179,29 +225,64 @@
 
             sourceData =
                 containerToObject(
-
                     document.querySelector(
                         sourceSelector
                     )
-
                 );
-
         }
 
         //------------------------------------------------------
-        // Merge
+        // 6- Merge
         //------------------------------------------------------
 
         return merge(
-
             formData,
-
             sourceData,
-
-            json
-
+            json,
+            attributeData
         );
+    }
+    function getAttributeData(element) {
 
+        if (!element)
+            return {};
+
+        const prefix =
+            "data-tech-data-";
+
+        const result = {};
+
+        Array.from(element.attributes)
+            .forEach(function (attribute) {
+
+                if (!attribute.name.startsWith(prefix))
+                    return;
+
+                const key =
+                    attribute.name.substring(
+                        prefix.length
+                    );
+
+                if (!key)
+                    return;
+
+                result[key] =
+                    parseAttributeValue(
+                        attribute.value
+                    );
+            });
+
+        return result;
+    }
+
+    function toCamelCase(value) {
+
+        return value.replace(
+            /-([a-z])/g,
+            function (_, char) {
+                return char.toUpperCase();
+            }
+        );
     }
 
     //----------------------------------------------------------

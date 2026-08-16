@@ -113,21 +113,21 @@
         // Inline Callback
         //--------------------------------------------------------------
 
-        switch (eventName) {
+        // switch (eventName) {
 
-            case Tech.Constants.Events.SUCCESS:
-                invokeCallback(element, "success", detail);
-                break;
+        //     case Tech.Constants.Events.SUCCESS:
+        //         invokeCallback(element, "success", detail);
+        //         break;
 
-            case Tech.Constants.Events.ERROR:
-                invokeCallback(element, "error", detail);
-                break;
+        //     case Tech.Constants.Events.ERROR:
+        //         invokeCallback(element, "error", detail);
+        //         break;
 
-            case Tech.Constants.Events.COMPLETE:
-                invokeCallback(element, "complete", detail);
-                break;
+        //     case Tech.Constants.Events.COMPLETE:
+        //         invokeCallback(element, "complete", detail);
+        //         break;
 
-        }
+        // }
 
     }
 

@@ -1,0 +1,68 @@
+﻿@model TechJs.MVC.Sample.Models.Product
+
+<form method="post"
+      data-tech="form"
+      data-tech-url="/Products/@(Model.Id > 0 ? "Edit" : "Create")"
+      data-tech-complete="productSaved">
+
+    @Html.AntiForgeryToken()
+
+    @if (Model.Id > 0)
+    {
+        <input type="hidden" asp-for="Id" />
+    }
+
+    <div class="mb-3">
+        <label asp-for="Name" class="form-label">
+            Name
+        </label>
+
+        <input asp-for="Name"
+               class="form-control"
+               required />
+
+        <span asp-validation-for="Name"
+              class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Price" class="form-label">
+            Price
+        </label>
+
+        <input asp-for="Price"
+               class="form-control"
+               type="number"
+               step="1"
+               required />
+
+        <span asp-validation-for="Price"
+              class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label">
+            Description
+        </label>
+
+        <textarea asp-for="Description"
+                  class="form-control"
+                  required></textarea>
+    </div>
+
+    <div class="d-flex gap-2">
+
+        <button type="submit"
+                class="btn btn-primary">
+            @(Model.Id > 0 ? "Update" : "Save")
+        </button>
+
+        <button type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal">
+            Cancel
+        </button>
+
+    </div>
+
+</form>

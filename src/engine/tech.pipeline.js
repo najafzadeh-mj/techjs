@@ -104,11 +104,12 @@
 
     }
 
-    function success(element, response) {
+    function success(element, result) {
 
         const context = {
             element,
-            response
+            response: result,
+            data: result?.data
         };
 
         dispatch(
@@ -121,7 +122,6 @@
             element,
             context
         );
-
     }
 
     function error(element, ex) {
@@ -144,10 +144,13 @@
 
     }
 
-    function complete(element) {
+    function complete(element, result, error) {
 
         const context = {
-            element
+            element,
+            response: result ?? null,
+            data: result?.data ?? null,
+            error: error ?? null
         };
 
         dispatch(
@@ -160,7 +163,6 @@
             element,
             context
         );
-
     }
 
     function readConfirm(element) {
@@ -253,19 +255,19 @@
 
         showLoading(element);
 
+        let result = null;
+        let caughtError = null;
+
         try {
 
             const response =
                 await executeRequest(options);
 
-            await executeResponse(
-                response,
-                element
-            );
-
-            //------------------------------------------------------
-            // NEW: update browser history
-            //------------------------------------------------------
+            result =
+                await executeResponse(
+                    response,
+                    element
+                );
 
             Tech.History.update(
                 element,
@@ -274,19 +276,20 @@
 
             success(
                 element,
-                response
+                result
             );
 
-            return response;
+            return result;
 
         }
         catch (ex) {
 
-            //------------------------------------------------------
-            // Render error target if configured
-            //------------------------------------------------------
+            caughtError = ex;
 
-            Tech.ErrorTarget.show(element, ex);
+            Tech.ErrorTarget.show(
+                element,
+                ex
+            );
 
             error(
                 element,
@@ -300,7 +303,11 @@
 
             hideLoading(element);
 
-            complete(element);
+            complete(
+                element,
+                result,
+                caughtError
+            );
 
         }
 
